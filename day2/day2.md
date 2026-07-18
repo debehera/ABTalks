@@ -1,4 +1,6 @@
 
+Today i learned that how a proper prompts changed the output of the result. this is amazing.
+
 Normal prompts: Create an image explaining Prompt Engineering
 
 Engineered Prompts: 
