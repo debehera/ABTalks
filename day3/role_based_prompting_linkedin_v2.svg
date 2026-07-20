@@ -1,0 +1,90 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Role-Based Prompting LinkedIn post</title>
+<desc>Square LinkedIn graphic comparing answers without and with role-based prompting, plus persona cards including Developer, in brown, beige and cream tones.</desc>
+
+<rect width="1080" height="1080" fill="#F4EEE2"/>
+<rect x="0" y="0" width="1080" height="10" fill="#8B5E3C"/>
+
+<text x="540" y="95" text-anchor="middle" font-family="Georgia, serif" font-size="20" letter-spacing="3" fill="#8B5E3C" font-weight="500">ABTALKS 60-DAY CLAUDE AI MASTERY CHALLENGE</text>
+
+<line x1="410" y1="120" x2="670" y2="120" stroke="#C9A876" stroke-width="2"/>
+
+<text x="540" y="192" text-anchor="middle" font-family="Georgia, serif" font-size="56" fill="#3D2B1F" font-weight="600">Role-Based Prompting</text>
+
+<text x="540" y="234" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#6E5A47" font-style="italic">Turn Claude into Any Expert You Need</text>
+
+<circle cx="540" cy="262" r="4" fill="#C9A876"/>
+
+<!-- Comparison Cards -->
+<!-- Left: Without role prompt -->
+<rect x="90" y="300" width="410" height="360" rx="16" fill="#EDE4D3" stroke="#D8C7A9" stroke-width="1.5"/>
+<rect x="90" y="300" width="410" height="60" rx="16" fill="#D8C7A9"/>
+<rect x="90" y="340" width="410" height="20" fill="#D8C7A9"/>
+<text x="295" y="337" text-anchor="middle" font-family="Georgia, serif" font-size="21" fill="#5A4632" font-weight="600">Without Role Prompt</text>
+
+<text x="295" y="405" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#8A7860">"Give me tips to</text>
+<text x="295" y="427" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#8A7860">grow my Instagram."</text>
+
+<rect x="120" y="460" width="350" height="170" rx="10" fill="#F7F2E7" stroke="#DED0B5" stroke-width="1"/>
+<text x="295" y="495" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#8A7860" font-style="italic">Generic Answer</text>
+<text x="295" y="530" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#6E5A47">Post consistently, use</text>
+<text x="295" y="553" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#6E5A47">good hashtags, engage</text>
+<text x="295" y="576" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#6E5A47">with your audience.</text>
+
+<!-- vs divider -->
+<circle cx="540" cy="480" r="38" fill="#8B5E3C"/>
+<text x="540" y="487" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#F4EEE2" font-weight="600">VS</text>
+
+<!-- Right: With role prompt -->
+<rect x="580" y="300" width="410" height="360" rx="16" fill="#4A3626" stroke="#3D2B1F" stroke-width="1.5"/>
+<rect x="580" y="300" width="410" height="60" rx="16" fill="#8B5E3C"/>
+<rect x="580" y="340" width="410" height="20" fill="#8B5E3C"/>
+<text x="785" y="337" text-anchor="middle" font-family="Georgia, serif" font-size="21" fill="#F4EEE2" font-weight="600">With Role Prompt</text>
+
+<text x="785" y="400" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#D8C7A9">"You are a growth strategist.</text>
+<text x="785" y="421" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#D8C7A9">Tips for a coffee brand?"</text>
+
+<rect x="610" y="460" width="350" height="170" rx="10" fill="#5C4530" stroke="#8B5E3C" stroke-width="1"/>
+<text x="785" y="495" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#E8C99B" font-style="italic">Expert-Level Answer</text>
+<text x="785" y="530" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#F4EEE2">Focus on sensory storytelling,</text>
+<text x="785" y="553" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#F4EEE2">niche coffee hashtags and</text>
+<text x="785" y="576" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#F4EEE2">micro-influencer partnerships.</text>
+
+<!-- Persona cards section -->
+<text x="540" y="715" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#6E5A47" letter-spacing="2">TRY THESE PERSONAS</text>
+
+<!-- Card 1: Developer -->
+<rect x="90" y="750" width="200" height="150" rx="14" fill="#EDE4D3" stroke="#C9A876" stroke-width="1.5"/>
+<circle cx="190" cy="800" r="26" fill="#8B5E3C"/>
+<text x="190" y="808" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#F4EEE2" font-weight="600">&lt;/&gt;</text>
+<text x="190" y="855" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#3D2B1F" font-weight="600">Developer</text>
+<text x="190" y="878" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#8A7860">Clean code, best practice</text>
+
+<!-- Card 2: Marketer -->
+<rect x="310" y="750" width="200" height="150" rx="14" fill="#EDE4D3" stroke="#C9A876" stroke-width="1.5"/>
+<circle cx="410" cy="800" r="26" fill="#8B5E3C"/>
+<text x="410" y="808" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#F4EEE2" font-weight="600">MKT</text>
+<text x="410" y="855" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#3D2B1F" font-weight="600">Marketer</text>
+<text x="410" y="878" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#8A7860">Strategy, growth, reach</text>
+
+<!-- Card 3: Writer -->
+<rect x="530" y="750" width="200" height="150" rx="14" fill="#EDE4D3" stroke="#C9A876" stroke-width="1.5"/>
+<circle cx="630" cy="800" r="26" fill="#8B5E3C"/>
+<text x="630" y="808" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#F4EEE2" font-weight="600">W</text>
+<text x="630" y="855" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#3D2B1F" font-weight="600">Writer</text>
+<text x="630" y="878" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#8A7860">Tone, voice, structure</text>
+
+<!-- Card 4: Analyst -->
+<rect x="750" y="750" width="200" height="150" rx="14" fill="#EDE4D3" stroke="#C9A876" stroke-width="1.5"/>
+<circle cx="850" cy="800" r="26" fill="#8B5E3C"/>
+<text x="850" y="808" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#F4EEE2" font-weight="600">%</text>
+<text x="850" y="855" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#3D2B1F" font-weight="600">Analyst</text>
+<text x="850" y="878" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#8A7860">Data, insight, precision</text>
+
+<line x1="90" y1="945" x2="990" y2="945" stroke="#D8C7A9" stroke-width="1"/>
+
+<text x="540" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="19" fill="#6E5A47">One instruction. A completely different result.</text>
+
+<text x="540" y="1035" text-anchor="middle" font-family="Georgia, serif" font-size="17" fill="#8B5E3C" letter-spacing="2">#ABTalks · #ClaudeAI · #PromptEngineering</text>
+
+</svg>
