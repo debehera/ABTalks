@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debraj Behera | Application & Cloud Architect</title>
+<meta name="description" content="Debraj Behera - Application/Cloud Architect specializing in .NET, Azure DevOps, Application Security and AI Engineering. Based in Pune, India.">
+<meta name="keywords" content="Debraj Behera, Application Architect, Cloud Architect, Azure, .NET, Application Security, DevSecOps, Pune">
+<meta name="author" content="Debraj Behera">
+<meta property="og:title" content="Debraj Behera | Application & Cloud Architect">
+<meta property="og:description" content="Application Architect bridging AI velocity with secure, resilient cloud architecture.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0d9488">
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(#7c3aed, #0d9488); border-radius: 10px; }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #7c3aed, #0d9488);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .nav-link.active {
+    color: #0d9488;
+  }
+  .dark .nav-link.active { color: #2dd4bf; }
+  .nav-link.active::after {
+    width: 100%;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: -4px;
+    width: 0%;
+    height: 2px;
+    background: linear-gradient(90deg,#7c3aed,#0d9488);
+    transition: width 0.3s ease;
+  }
+  .nav-link:hover::after { width: 100%; }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.7s cubic-bezier(.2,.8,.2,1);
+  }
+  .reveal.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .skill-bar-fill {
+    width: 0%;
+    transition: width 1.4s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .card-hover {
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -12px rgba(124,58,237,0.25);
+  }
+
+  .typing-cursor {
+    border-right: 3px solid #0d9488;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { border-color: transparent; } }
+
+  .blob-shape {
+    filter: blur(60px);
+  }
+</style>
+</head>
+<body class="bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-500">
+
+<!-- ================= NAVBAR ================= -->
+<nav id="navbar" class="fixed top-0 w-full z-50 backdrop-blur-md bg-white/70 dark:bg-slate-950/70 border-b border-slate-200/50 dark:border-slate-800/50 transition-colors duration-500">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="#home" class="text-xl font-extrabold gradient-text">DB</a>
+
+    <ul class="hidden md:flex gap-8 text-sm font-semibold">
+      <li><a href="#home" class="nav-link relative pb-1" data-section="home">Home</a></li>
+      <li><a href="#about" class="nav-link relative pb-1" data-section="about">About</a></li>
+      <li><a href="#skills" class="nav-link relative pb-1" data-section="skills">Skills</a></li>
+      <li><a href="#projects" class="nav-link relative pb-1" data-section="projects">Projects</a></li>
+      <li><a href="#achievements" class="nav-link relative pb-1" data-section="achievements">Achievements</a></li>
+      <li><a href="#contact" class="nav-link relative pb-1" data-section="contact">Contact</a></li>
+    </ul>
+
+    <div class="flex items-center gap-3">
+      <button id="theme-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:scale-110 transition-transform">
+        <i class="fa-solid fa-moon dark:hidden text-slate-700"></i>
+        <i class="fa-solid fa-sun hidden dark:inline text-amber-300"></i>
+      </button>
+      <button id="menu-toggle" class="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- mobile menu -->
+  <ul id="mobile-menu" class="hidden md:hidden flex-col gap-1 px-6 pb-4 font-semibold text-sm">
+    <li><a href="#home" class="mobile-link block py-2">Home</a></li>
+    <li><a href="#about" class="mobile-link block py-2">About</a></li>
+    <li><a href="#skills" class="mobile-link block py-2">Skills</a></li>
+    <li><a href="#projects" class="mobile-link block py-2">Projects</a></li>
+    <li><a href="#achievements" class="mobile-link block py-2">Achievements</a></li>
+    <li><a href="#contact" class="mobile-link block py-2">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ================= HERO ================= -->
+<section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+  <div class="absolute top-10 left-10 w-72 h-72 bg-brand-purple/30 rounded-full blob-shape animate-blob"></div>
+  <div class="absolute bottom-10 right-10 w-72 h-72 bg-brand-teal/30 rounded-full blob-shape animate-blob" style="animation-delay:2s"></div>
+
+  <div class="relative max-w-4xl mx-auto px-6 text-center">
+    <p class="reveal show text-brand-teal dark:text-teal-300 font-semibold tracking-widest uppercase mb-4 text-sm">Welcome to my portfolio</p>
+    <h1 class="reveal show text-4xl sm:text-6xl font-extrabold mb-4">
+      Hi, I'm <span class="gradient-text">Debraj Behera</span>
+    </h1>
+    <h2 class="reveal show text-xl sm:text-2xl font-semibold text-slate-600 dark:text-slate-300 mb-6 h-10">
+      <span id="typing-text" class="typing-cursor pr-1"></span>
+    </h2>
+    <p class="reveal show max-w-2xl mx-auto text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+      Pairing AI velocity with robust architecture to help organizations ship secure, resilient applications at scale.
+    </p>
+
+    <div class="reveal show flex flex-wrap items-center justify-center gap-4 mb-10">
+      <a href="#contact" class="px-6 py-3 rounded-full bg-gradient-to-r from-brand-purple to-brand-teal text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all">
+        <i class="fa-solid fa-paper-plane mr-2"></i>Get in Touch
+      </a>
+      <a href="#projects" class="px-6 py-3 rounded-full border-2 border-slate-300 dark:border-slate-700 font-semibold hover:border-brand-teal hover:text-brand-teal transition-all">
+        View Projects
+      </a>
+    </div>
+
+    <div class="reveal show flex items-center justify-center gap-5 text-xl">
+      <a href="https://www.linkedin.com/in/devrajb/" target="_blank" rel="noopener" class="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-brand-teal hover:text-white transition-all"><i class="fa-brands fa-linkedin-in"></i></a>
+      <a href="#" target="_blank" rel="noopener" class="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-brand-teal hover:text-white transition-all"><i class="fa-brands fa-github"></i></a>
+      <a href="mailto:devrajbehera@gmail.com" class="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-brand-teal hover:text-white transition-all"><i class="fa-solid fa-envelope"></i></a>
+    </div>
+
+    <div class="mt-14 animate-bounce">
+      <i class="fa-solid fa-chevron-down text-slate-400"></i>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ABOUT ================= -->
+<section id="about" class="py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-14">
+      <p class="text-brand-teal dark:text-teal-300 font-semibold tracking-widest uppercase mb-2 text-sm">About Me</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Who I Am</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-10 items-center">
+      <div class="reveal md:col-span-1 flex justify-center">
+        <div class="w-56 h-56 rounded-3xl bg-gradient-to-br from-brand-purple to-brand-teal p-1 shadow-2xl">
+          <div class="w-full h-full rounded-3xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+            <img id="profile-photo" src="https://api.dicebear.com/7.x/initials/svg?seed=Debraj%20Behera&backgroundType=gradientLinear&backgroundColor=7c3aed,0d9488" alt="Debraj Behera" class="w-full h-full object-cover">
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal md:col-span-2">
+        <p class="text-lg leading-relaxed text-slate-600 dark:text-slate-300 mb-6">
+          I'm an <span class="font-semibold text-slate-800 dark:text-white">Application Architect</span> bringing deep expertise across
+          <span class="font-semibold text-brand-purple"> .NET</span>, <span class="font-semibold text-brand-teal">Azure DevOps</span>, and modern
+          <span class="font-semibold text-slate-800 dark:text-white">AI engineering</span> to build enterprise-grade software.
+          I focus on embedding <span class="font-semibold">Application Security</span> and <span class="font-semibold">Red Teaming</span> principles
+          directly into the CI/CD pipeline from day one.
+        </p>
+        <p class="text-lg leading-relaxed text-slate-600 dark:text-slate-300 mb-8">
+          By pairing AI velocity with robust architecture, I help organizations ship secure, resilient applications at scale.
+        </p>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple"><i class="fa-solid fa-user"></i></div>
+            <div><p class="text-xs text-slate-400">Name</p><p class="font-semibold">Debraj Behera</p></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal"><i class="fa-solid fa-location-dot"></i></div>
+            <div><p class="text-xs text-slate-400">Location</p><p class="font-semibold">Pune, India</p></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple"><i class="fa-solid fa-envelope"></i></div>
+            <div><p class="text-xs text-slate-400">Email</p><p class="font-semibold break-all">devrajbehera@gmail.com</p></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal"><i class="fa-solid fa-briefcase"></i></div>
+            <div><p class="text-xs text-slate-400">Role</p><p class="font-semibold">Application/Cloud Architect</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SKILLS ================= -->
+<section id="skills" class="py-24 px-6 bg-slate-50 dark:bg-slate-900/50">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-14">
+      <p class="text-brand-teal dark:text-teal-300 font-semibold tracking-widest uppercase mb-2 text-sm">Skills</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold">What I Bring</h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-12">
+      <!-- Technical bars -->
+      <div class="reveal">
+        <h3 class="text-lg font-bold mb-6 flex items-center gap-2"><i class="fa-solid fa-code text-brand-purple"></i>Technical Skills</h3>
+        <div class="space-y-6">
+          <div>
+            <div class="flex justify-between mb-1 text-sm font-semibold"><span>Azure AI</span><span data-percent="92">0%</span></div>
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+              <div class="skill-bar-fill h-full rounded-full bg-gradient-to-r from-brand-purple to-brand-teal" data-width="92"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1 text-sm font-semibold"><span>Azure DevOps</span><span data-percent="90">0%</span></div>
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+              <div class="skill-bar-fill h-full rounded-full bg-gradient-to-r from-brand-purple to-brand-teal" data-width="90"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1 text-sm font-semibold"><span>Application Security</span><span data-percent="88">0%</span></div>
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+              <div class="skill-bar-fill h-full rounded-full bg-gradient-to-r from-brand-purple to-brand-teal" data-width="88"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1 text-sm font-semibold"><span>Agile</span><span data-percent="85">0%</span></div>
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+              <div class="skill-bar-fill h-full rounded-full bg-gradient-to-r from-brand-purple to-brand-teal" data-width="85"></div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-bold mt-10 mb-4 flex items-center gap-2"><i class="fa-solid fa-comments text-brand-teal"></i>Soft Skills</h3>
+        <div class="flex flex-wrap gap-3">
+          <span class="px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold">Technical Mentorship</span>
+          <span class="px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold">Pragmatic Decision-Making</span>
+        </div>
+      </div>
+
+      <!-- Tools & tags -->
+      <div class="reveal">
+        <h3 class="text-lg font-bold mb-6 flex items-center gap-2"><i class="fa-solid fa-toolbox text-brand-purple"></i>Tools & Technologies</h3>
+        <div class="flex flex-wrap gap-3 mb-10">
+          <span class="tag px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold hover:scale-105 transition-transform"><i class="fa-solid fa-code mr-1 text-brand-teal"></i>VS Code</span>
+          <span class="tag px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold hover:scale-105 transition-transform"><i class="fa-brands fa-python mr-1 text-brand-teal"></i>Jupyter</span>
+          <span class="tag px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold hover:scale-105 transition-transform"><i class="fa-solid fa-chart-column mr-1 text-brand-teal"></i>Power BI</span>
+          <span class="tag px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold hover:scale-105 transition-transform"><i class="fa-brands fa-microsoft mr-1 text-brand-teal"></i>.NET Stack</span>
+          <span class="tag px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold hover:scale-105 transition-transform"><i class="fa-brands fa-microsoft mr-1 text-brand-teal"></i>Azure</span>
+          <span class="tag px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow text-sm font-semibold hover:scale-105 transition-transform"><i class="fa-solid fa-shield-halved mr-1 text-brand-teal"></i>OWASP</span>
+        </div>
+
+        <div class="rounded-2xl bg-gradient-to-br from-brand-purple to-brand-teal p-6 text-white shadow-xl">
+          <i class="fa-solid fa-quote-left text-2xl opacity-70 mb-3"></i>
+          <p class="font-medium leading-relaxed">"Security isn't a gate at the end of the pipeline — it's a principle baked into every commit."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROJECTS ================= -->
+<section id="projects" class="py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-14">
+      <p class="text-brand-teal dark:text-teal-300 font-semibold tracking-widest uppercase mb-2 text-sm">Portfolio</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Featured Projects</h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="reveal card-hover rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
+        <div class="h-2 bg-gradient-to-r from-brand-purple to-brand-teal"></div>
+        <div class="p-8">
+          <div class="w-14 h-14 rounded-xl bg-brand-purple/10 flex items-center justify-center text-brand-purple text-2xl mb-5">
+            <i class="fa-solid fa-cloud"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Azure Migration</h3>
+          <p class="text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+            Led the end-to-end migration of on-premise infrastructure to Microsoft Azure cloud, ensuring
+            minimal downtime, cost optimization, and improved scalability for enterprise workloads.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-brand-teal/10 text-brand-teal">Azure</span>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-brand-teal/10 text-brand-teal">Cloud Migration</span>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-brand-teal/10 text-brand-teal">Infrastructure</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal card-hover rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
+        <div class="h-2 bg-gradient-to-r from-brand-teal to-brand-purple"></div>
+        <div class="p-8">
+          <div class="w-14 h-14 rounded-xl bg-brand-teal/10 flex items-center justify-center text-brand-teal text-2xl mb-5">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Application Security</h3>
+          <p class="text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+            Established and led application security practices across enterprise .NET applications,
+            embedding OWASP-aligned controls directly into the CI/CD pipeline.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-brand-purple/10 text-brand-purple">OWASP</span>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-brand-purple/10 text-brand-purple">.NET Stack</span>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-brand-purple/10 text-brand-purple">DevSecOps</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ACHIEVEMENTS ================= -->
+<section id="achievements" class="py-24 px-6 bg-slate-50 dark:bg-slate-900/50">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-14">
+      <p class="text-brand-teal dark:text-teal-300 font-semibold tracking-widest uppercase mb-2 text-sm">Achievements</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Certifications</h2>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto">
+      <div class="reveal card-hover rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg p-8 text-center">
+        <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-brand-purple to-brand-teal flex items-center justify-center text-white text-2xl mb-5 shadow-lg">
+          <i class="fa-solid fa-certificate"></i>
+        </div>
+        <h3 class="text-lg font-bold mb-1">AZ-305</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Microsoft Certified: Azure Solutions Architect Expert</p>
+      </div>
+
+      <div class="reveal card-hover rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg p-8 text-center">
+        <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-brand-teal to-brand-purple flex items-center justify-center text-white text-2xl mb-5 shadow-lg">
+          <i class="fa-solid fa-award"></i>
+        </div>
+        <h3 class="text-lg font-bold mb-1">SC-300</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Microsoft Certified: Identity and Access Administrator</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<section id="contact" class="py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center mb-14">
+      <p class="text-brand-teal dark:text-teal-300 font-semibold tracking-widest uppercase mb-2 text-sm">Contact</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Let's Connect</h2>
+      <p class="text-slate-500 dark:text-slate-400 mt-4 max-w-xl mx-auto">
+        Have a project, opportunity, or just want to talk architecture and security? My inbox is open.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-10">
+      <div class="reveal space-y-5">
+        <a href="mailto:devrajbehera@gmail.com" class="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow hover:shadow-lg transition-all">
+          <div class="w-12 h-12 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple text-lg"><i class="fa-solid fa-envelope"></i></div>
+          <div><p class="text-xs text-slate-400">Email</p><p class="font-semibold">devrajbehera@gmail.com</p></div>
+        </a>
+        <a href="https://www.linkedin.com/in/devrajb/" target="_blank" rel="noopener" class="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow hover:shadow-lg transition-all">
+          <div class="w-12 h-12 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal text-lg"><i class="fa-brands fa-linkedin-in"></i></div>
+          <div><p class="text-xs text-slate-400">LinkedIn</p><p class="font-semibold">linkedin.com/in/devrajb</p></div>
+        </a>
+        <a href="#" target="_blank" rel="noopener" class="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow hover:shadow-lg transition-all">
+          <div class="w-12 h-12 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple text-lg"><i class="fa-brands fa-github"></i></div>
+          <div><p class="text-xs text-slate-400">GitHub</p><p class="font-semibold">github.com/debraj</p></div>
+        </a>
+        <div class="flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow">
+          <div class="w-12 h-12 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal text-lg"><i class="fa-solid fa-location-dot"></i></div>
+          <div><p class="text-xs text-slate-400">Location</p><p class="font-semibold">Pune, India</p></div>
+        </div>
+      </div>
+
+      <form class="reveal space-y-4" id="contact-form">
+        <input type="text" required placeholder="Your Name" class="w-full px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-teal focus:outline-none transition-colors">
+        <input type="email" required placeholder="Your Email" class="w-full px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-teal focus:outline-none transition-colors">
+        <textarea required rows="5" placeholder="Your Message" class="w-full px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-teal focus:outline-none transition-colors resize-none"></textarea>
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-purple to-brand-teal text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
+          Send Message
+        </button>
+        <p id="form-status" class="text-sm text-center text-brand-teal font-medium hidden">✓ Message ready to send via your email client!</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="py-8 px-6 border-t border-slate-200 dark:border-slate-800 text-center">
+  <p class="text-sm text-slate-400">© <span id="year"></span> Debraj Behera. Built with purpose & precision.</p>
+</footer>
+
+<script>
+  // ---------- Dark/Light Mode ----------
+  const themeToggle = document.getElementById('theme-toggle');
+  const html = document.documentElement;
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    html.classList.add('dark');
+  }
+  themeToggle.addEventListener('click', () => {
+    html.classList.toggle('dark');
+    localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+  });
+
+  // ---------- Mobile Menu ----------
+  const menuToggle = document.getElementById('menu-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+  menuToggle.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+  document.querySelectorAll('.mobile-link').forEach(link => {
+    link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+  });
+
+  // ---------- Typing Animation ----------
+  const roles = ["Application Architect", "Cloud Architect", "Azure DevOps Specialist", "AppSec Advocate"];
+  const typingEl = document.getElementById('typing-text');
+  let roleIndex = 0, charIndex = 0, deleting = false;
+
+  function typeLoop() {
+    const current = roles[roleIndex];
+    if (!deleting) {
+      typingEl.textContent = current.substring(0, charIndex + 1);
+      charIndex++;
+      if (charIndex === current.length) {
+        deleting = true;
+        setTimeout(typeLoop, 1400);
+        return;
+      }
+    } else {
+      typingEl.textContent = current.substring(0, charIndex - 1);
+      charIndex--;
+      if (charIndex === 0) {
+        deleting = false;
+        roleIndex = (roleIndex + 1) % roles.length;
+      }
+    }
+    setTimeout(typeLoop, deleting ? 40 : 90);
+  }
+  typeLoop();
+
+  // ---------- Scroll Reveal ----------
+  const revealEls = document.querySelectorAll('.reveal');
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('show');
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => revealObserver.observe(el));
+
+  // ---------- Skill Bars Animation ----------
+  const skillSection = document.getElementById('skills');
+  let skillsAnimated = false;
+  const skillObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !skillsAnimated) {
+        skillsAnimated = true;
+        document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+          const width = bar.getAttribute('data-width');
+          bar.style.width = width + '%';
+        });
+        document.querySelectorAll('[data-percent]').forEach(label => {
+          const target = parseInt(label.getAttribute('data-percent'));
+          let current = 0;
+          const step = Math.max(1, Math.floor(target / 40));
+          const interval = setInterval(() => {
+            current += step;
+            if (current >= target) { current = target; clearInterval(interval); }
+            label.textContent = current + '%';
+          }, 30);
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+  skillObserver.observe(skillSection);
+
+  // ---------- Active Nav Highlighting ----------
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const id = entry.target.getAttribute('id');
+      const link = document.querySelector(`.nav-link[data-section="${id}"]`);
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(sec => navObserver.observe(sec));
+
+  // ---------- Navbar shadow on scroll ----------
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      navbar.classList.add('shadow-md');
+    } else {
+      navbar.classList.remove('shadow-md');
+    }
+  });
+
+  // ---------- Contact Form ----------
+  const form = document.getElementById('contact-form');
+  const status = document.getElementById('form-status');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const [nameInput, emailInput, msgInput] = form.querySelectorAll('input, textarea');
+    const subject = encodeURIComponent('Portfolio Contact from ' + nameInput.value);
+    const body = encodeURIComponent(`Name: ${nameInput.value}\nEmail: ${emailInput.value}\n\nMessage:\n${msgInput.value}`);
+    window.location.href = `mailto:devrajbehera@gmail.com?subject=${subject}&body=${body}`;
+    status.classList.remove('hidden');
+    setTimeout(() => status.classList.add('hidden'), 4000);
+  });
+
+  // ---------- Footer Year ----------
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
