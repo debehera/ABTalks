@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Memo — Pitch Critic</title>
+<style>
+  :root{
+    --ink:#121316;
+    --paper:#EDEAE1;
+    --paper-dim:#D8D3C6;
+    --panel:#1B1D22;
+    --panel-2:#202329;
+    --line:#34373f;
+    --red:#B23A2E;
+    --red-bright:#D14A3C;
+    --green:#3E7A55;
+    --gold:#B8862E;
+    --text-dim:#9A9CA5;
+    --mono: 'Courier New', Courier, monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:Georgia, 'Times New Roman', serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  ::selection{background:var(--red); color:var(--paper);}
+
+  /* ===== Header ===== */
+  .masthead{
+    border-bottom:1px solid var(--line);
+    padding:28px 24px 20px;
+    text-align:center;
+    position:relative;
+  }
+  .masthead .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--red-bright);
+  }
+  .masthead h1{
+    font-size:clamp(28px,5vw,44px);
+    font-weight:400;
+    letter-spacing:1px;
+    margin-top:6px;
+  }
+  .masthead .sub{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+    margin-top:8px;
+    letter-spacing:0.5px;
+  }
+
+  .wrap{max-width:960px; margin:0 auto; padding:32px 20px 80px;}
+
+  /* ===== Form ===== */
+  .memo-panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:32px;
+    margin-bottom:24px;
+  }
+  .memo-panel h2{
+    font-size:13px;
+    font-family:var(--mono);
+    text-transform:uppercase;
+    letter-spacing:2px;
+    color:var(--gold);
+    margin-bottom:20px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .memo-panel h2::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .field{margin-bottom:22px;}
+  .field label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+  }
+  .field .hint{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:#6b6d76;
+    margin-top:6px;
+  }
+  textarea, input[type=text]{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--paper);
+    padding:14px;
+    font-family:Georgia, serif;
+    font-size:14.5px;
+    resize:vertical;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  textarea{min-height:78px;}
+  textarea:focus, input:focus{
+    outline:none;
+    border-color:var(--red-bright);
+    background:#24272e;
+  }
+  textarea::placeholder, input::placeholder{color:#5c5e67;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px 24px;}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+
+  .submit-row{display:flex; justify-content:flex-end; margin-top:8px;}
+  .btn-submit{
+    background:var(--red);
+    color:var(--paper);
+    border:1px solid var(--red-bright);
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    padding:14px 28px;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .btn-submit:hover{background:var(--red-bright);}
+  .btn-submit:active{transform:scale(0.98);}
+  .btn-submit:disabled{opacity:0.5; cursor:not-allowed;}
+
+  /* ===== Loading ===== */
+  .loading-box{
+    display:none;
+    text-align:center;
+    padding:50px 20px;
+    font-family:var(--mono);
+    color:var(--text-dim);
+    font-size:13px;
+    letter-spacing:1px;
+  }
+  .loading-box.active{display:block;}
+  .stamp-loader{
+    width:46px; height:46px;
+    border:2px solid var(--line);
+    border-top-color:var(--red-bright);
+    border-radius:50%;
+    margin:0 auto 18px;
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ===== Error ===== */
+  .error-box{
+    display:none;
+    border:1px solid var(--red);
+    background:rgba(178,58,46,0.1);
+    padding:20px 24px;
+    font-family:var(--mono);
+    font-size:13px;
+    color:#E8998C;
+    margin-bottom:24px;
+  }
+  .error-box.active{display:block;}
+
+  /* ===== Results ===== */
+  .results{display:none;}
+  .results.active{display:block; animation:fadeUp .5s ease;}
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .verdict-row{
+    display:flex;
+    gap:28px;
+    align-items:center;
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:32px;
+    margin-bottom:24px;
+    position:relative;
+    overflow:hidden;
+  }
+  @media(max-width:640px){.verdict-row{flex-direction:column;}}
+
+  .dial-wrap{position:relative; flex-shrink:0;}
+  .dial-score{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    text-align:center;
+  }
+  .dial-score .num{
+    font-family:var(--mono);
+    font-size:34px;
+    font-weight:bold;
+  }
+  .dial-score .of{
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--text-dim);
+    letter-spacing:1px;
+  }
+
+  .verdict-text{flex:1;}
+  .stamp{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:22px;
+    font-weight:bold;
+    letter-spacing:3px;
+    padding:8px 18px;
+    border:3px solid currentColor;
+    border-radius:4px;
+    transform:rotate(-3deg);
+    margin-bottom:14px;
+  }
+  .stamp.go{color:var(--green);}
+  .stamp.nogo{color:var(--red-bright);}
+  .stamp.maybe{color:var(--gold);}
+
+  .verdict-headline{font-size:20px; line-height:1.4; margin-bottom:6px;}
+  .verdict-sub{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+
+  /* Category bars */
+  .categories{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:28px 32px;
+    margin-bottom:24px;
+  }
+  .categories h3, .risks h3, .strengths h3, .questions h3{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    color:var(--gold);
+    margin-bottom:18px;
+  }
+  .cat-row{margin-bottom:16px;}
+  .cat-row:last-child{margin-bottom:0;}
+  .cat-label-line{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:12.5px;
+    margin-bottom:6px;
+  }
+  .cat-label-line .name{color:var(--paper);}
+  .cat-label-line .score{color:var(--text-dim);}
+  .bar-track{
+    height:8px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    width:0%;
+    background:var(--red-bright);
+    transition:width 1s cubic-bezier(.22,1,.36,1);
+  }
+  .cat-note{
+    font-size:13.5px;
+    color:var(--text-dim);
+    margin-top:6px;
+    font-style:italic;
+  }
+
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;}
+  @media(max-width:720px){.two-col{grid-template-columns:1fr;}}
+
+  .risks, .strengths{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:26px 28px;
+  }
+  .risks{border-left:3px solid var(--red);}
+  .strengths{border-left:3px solid var(--green);}
+  .risks ul, .strengths ul, .questions ol{
+    list-style:none;
+  }
+  .risks li, .strengths li{
+    font-size:14px;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    gap:10px;
+  }
+  .risks li:last-child, .strengths li:last-child{border-bottom:none;}
+  .risks li::before{content:'−'; color:var(--red-bright); font-weight:bold; flex-shrink:0;}
+  .strengths li::before{content:'+'; color:var(--green); font-weight:bold; flex-shrink:0;}
+
+  .questions{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:28px 32px;
+    margin-bottom:24px;
+  }
+  .questions ol{counter-reset:q;}
+  .questions li{
+    counter-increment:q;
+    font-size:14.5px;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    gap:14px;
+  }
+  .questions li:last-child{border-bottom:none;}
+  .questions li::before{
+    content:counter(q);
+    font-family:var(--mono);
+    color:var(--gold);
+    border:1px solid var(--gold);
+    width:22px; height:22px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px;
+    border-radius:50%;
+  }
+
+  .bottom-line{
+    background:var(--panel-2);
+    border:1px dashed var(--line);
+    padding:24px 28px;
+    font-size:15px;
+    line-height:1.7;
+    margin-bottom:8px;
+  }
+  .bottom-line .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--red-bright);
+    letter-spacing:2px;
+    text-transform:uppercase;
+    display:block;
+    margin-bottom:10px;
+  }
+
+  /* ===== Docs panel ===== */
+  .docs{
+    max-width:960px;
+    margin:40px auto 0;
+    padding:0 20px 60px;
+  }
+  .docs-toggle{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    padding:16px 22px;
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .docs-toggle:hover{background:var(--panel-2);}
+  .docs-toggle .arrow{transition:transform .2s ease; color:var(--gold);}
+  .docs-toggle.open .arrow{transform:rotate(90deg);}
+  .docs-content{
+    display:none;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-top:none;
+    padding:28px 32px;
+    font-size:14px;
+    color:var(--paper-dim);
+  }
+  .docs-content.active{display:block;}
+  .docs-content h4{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--gold);
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin:20px 0 10px;
+  }
+  .docs-content h4:first-child{margin-top:0;}
+  .docs-content p{margin-bottom:10px; line-height:1.7;}
+  .docs-content pre{
+    background:var(--ink);
+    border:1px solid var(--line);
+    padding:16px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    overflow-x:auto;
+    white-space:pre-wrap;
+    color:#c9cbd3;
+    margin:10px 0;
+  }
+  .docs-content ul{padding-left:20px; margin-bottom:10px;}
+  .docs-content li{margin-bottom:6px; line-height:1.6;}
+
+  footer{
+    text-align:center;
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:#54565f;
+    padding-bottom:30px;
+    letter-spacing:1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="eyebrow">Confidential Deal Memo</div>
+  <h1>THE MEMO</h1>
+  <div class="sub">A blunt first read on your pitch, before an investor gives you one</div>
+</div>
+
+<div class="wrap">
+
+  <form class="memo-panel" id="pitchForm">
+    <h2>Submit for Review</h2>
+
+    <div class="field">
+      <label for="companyName">Company / Idea Name</label>
+      <input type="text" id="companyName" placeholder="e.g. Fernbase" required>
+    </div>
+
+    <div class="field">
+      <label for="problem">The Problem</label>
+      <textarea id="problem" placeholder="What painful, real problem are you solving? Who has it?" required></textarea>
+    </div>
+
+    <div class="field">
+      <label for="solution">The Solution</label>
+      <textarea id="solution" placeholder="What have you built or plan to build? Why is this the right fix?" required></textarea>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="market">Market</label>
+        <textarea id="market" placeholder="Who buys this, how big is the market, how do you know?" required></textarea>
+      </div>
+      <div class="field">
+        <label for="businessModel">Business Model</label>
+        <textarea id="businessModel" placeholder="How does this make money? Pricing, unit economics?" required></textarea>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="traction">Traction (if any)</label>
+        <textarea id="traction" placeholder="Users, revenue, pilots, waitlist — or 'pre-launch'"></textarea>
+        <div class="hint">Leave blank or say "none yet" if pre-traction — that's fine.</div>
+      </div>
+      <div class="field">
+        <label for="team">Team</label>
+        <textarea id="team" placeholder="Who's building this, and why are you the right people?" required></textarea>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="competition">Competition / Alternatives</label>
+      <textarea id="competition" placeholder="Who else solves this today, including 'doing nothing'? What's your edge?" required></textarea>
+    </div>
+
+    <div class="field">
+      <label for="ask">The Ask (optional)</label>
+      <input type="text" id="ask" placeholder="e.g. Raising $500K pre-seed for 18 months runway">
+    </div>
+
+    <div class="submit-row">
+      <button type="submit" class="btn-submit" id="submitBtn">Submit for Review →</button>
+    </div>
+  </form>
+
+  <div class="loading-box" id="loadingBox">
+    <div class="stamp-loader"></div>
+    <div id="loadingText">Reading your memo...</div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="results" id="results">
+
+    <div class="verdict-row">
+      <div class="dial-wrap">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="60" fill="none" stroke="#2a2d33" stroke-width="10"/>
+          <circle id="dialCircle" cx="70" cy="70" r="60" fill="none" stroke="#B23A2E" stroke-width="10"
+                  stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round"
+                  transform="rotate(-90 70 70)" style="transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1), stroke 1.2s ease;"/>
+        </svg>
+        <div class="dial-score">
+          <div class="num" id="dialNum">0</div>
+          <div class="of">/ 100</div>
+        </div>
+      </div>
+      <div class="verdict-text">
+        <div class="stamp" id="stampEl">—</div>
+        <div class="verdict-headline" id="verdictHeadline"></div>
+        <div class="verdict-sub" id="verdictSub"></div>
+      </div>
+    </div>
+
+    <div class="categories">
+      <h3>Category Breakdown</h3>
+      <div id="categoryList"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="risks">
+        <h3>Biggest Risks</h3>
+        <ul id="risksList"></ul>
+      </div>
+      <div class="strengths">
+        <h3>What's Actually Working</h3>
+        <ul id="strengthsList"></ul>
+      </div>
+    </div>
+
+    <div class="questions">
+      <h3>Questions You Need Better Answers For</h3>
+      <ol id="questionsList"></ol>
+    </div>
+
+    <div class="bottom-line">
+      <span class="tag">Bottom Line</span>
+      <span id="bottomLine"></span>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="docs">
+  <button class="docs-toggle" id="docsToggle">
+    <span>How this was built</span>
+    <span class="arrow">▸</span>
+  </button>
+  <div class="docs-content" id="docsContent">
+
+    <h4>The System Prompt</h4>
+    <p>The assistant is a single-purpose critic, not a general chatbot. The system prompt locks Claude into one role — a blunt, expert VC doing first-read diligence — and one output contract: a strict JSON object matching the dashboard's data shape. This keeps the UI deterministic: no parsing prose, no guessing where the "score" is hiding in a paragraph.</p>
+    <p>Key design decisions in the prompt:</p>
+    <ul>
+      <li><strong>Role framing over persona decoration.</strong> Instead of "act like a fun VC," it defines the actual judgment criteria a real early-stage investor uses (problem urgency, market size, unit economics, team-market fit, defensibility) so scores are grounded, not vibes.</li>
+      <li><strong>Forced structure.</strong> Claude must return six fixed categories with 0–100 scores plus a one-line note each — this stops score inflation from vague enthusiasm and makes the dial/bars always renderable.</li>
+      <li><strong>Verdict logic is rule-based, not vibes-based.</strong> The prompt defines score bands that map to GO / MAYBE / NO-GO, so the stamp is consistent with the numeric score instead of Claude picking a mood independently.</li>
+      <li><strong>Edge cases handled explicitly:</strong> missing/thin fields get penalized in relevant categories rather than the model inventing details; irrelevant or joke submissions get a low score and an honest note rather than a fabricated critique; abusive input is declined without breaking the JSON contract.</li>
+      <li><strong>No sycophancy clause.</strong> The prompt explicitly forbids hedging language ("this could work if...") in favor of direct verdicts, matching the "blunt VC" tone the user asked for.</li>
+    </ul>
+    <pre id="systemPromptDisplay"></pre>
+
+    <h4>Why the UI looks like this</h4>
+    <p>The interface is styled as a confidential deal memo rather than a chat window, because the mental model here isn't "talk to an AI" — it's "get judged by an investor." A dark, serious panel system with a serif masthead and monospace data labels borrows from the visual language of due-diligence documents and term sheets, not consumer apps.</p>
+    <ul>
+      <li>The circular <strong>score dial</strong> and <strong>rubber-stamp verdict</strong> give an instant read before anyone scrolls — mirroring how a real investor decides fast, then explains why.</li>
+      <li><strong>Category bars</strong> make the score legible and specific — a founder can see exactly which dimension (market, team, moat) is dragging the number down instead of arguing with one blended score.</li>
+      <li><strong>Risks vs. strengths</strong> sit side by side, deliberately not stacked, so the read isn't lopsided doom — the blunt tone still gives credit where it's earned.</li>
+      <li>The <strong>investor questions</strong> section exists because the real value of a pitch critic isn't the score — it's arming the founder with the hard questions before a real investor asks them.</li>
+    </ul>
+
+    <h4>Extending this assistant</h4>
+    <p>Ways to grow this from a single-shot form into something more capable:</p>
+    <ul>
+      <li><strong>Add memory:</strong> store each submission's JSON in localStorage/a backend keyed by company name, and show score deltas across revisions ("Team score improved 12pts since last submission").</li>
+      <li><strong>Add tools:</strong> give Claude the <code>web_search</code> tool so it can sanity-check market-size claims or check if competitors mentioned actually exist, and cite what it finds.</li>
+      <li><strong>Multi-step flow:</strong> turn this into a conversation — after the verdict, let the founder ask "how do I fix the moat score?" and have Claude follow up conversationally using the original memo as context, rather than only doing one-shot scoring.</li>
+      <li><strong>File input:</strong> accept an uploaded pitch deck PDF, extract slide text, and pre-fill the form fields automatically before scoring.</li>
+      <li><strong>Comparative benchmarking:</strong> feed in category scores from real seed-stage companies (with permission/anonymized) so the dashboard can show percentile context, not just an absolute score.</li>
+    </ul>
+
+  </div>
+</div>
+
+<footer>THE MEMO — powered by Claude — not investment advice</footer>
+
+<script>
+const SYSTEM_PROMPT = `You are a blunt, highly experienced early-stage venture capital investor doing a first-read diligence pass on a founder's pitch. You have seen thousands of pitches. You are not their friend, not their mentor, and not trying to be encouraging for its own sake — you are trying to give them the most useful, honest read they can get before a real investor does.
+
+ROLE AND SCOPE
+- Evaluate the business plan/pitch submitted via structured fields: company name, problem, solution, market, business model, traction, team, competition, and optionally the ask.
+- Judge like a real seed/pre-seed investor would: problem urgency and pain, market size and timing, solution differentiation, unit economics and business model viability, team-market fit, traction (or realistic lack thereof), and competitive defensibility/moat.
+- You are not a lawyer, accountant, or guarantee of funding outcomes. You are giving a first-read opinion, not due diligence sign-off.
+
+OUTPUT FORMAT — CRITICAL
+You must respond with ONLY a valid JSON object, no markdown fences, no preamble, no commentary outside the JSON. Match this exact shape:
+
+{
+  "overallScore": <integer 0-100>,
+  "verdict": "GO" | "MAYBE" | "NO-GO",
+  "verdictHeadline": "<one punchy sentence, max ~18 words, stating the core judgment>",
+  "verdictSub": "<one short line of context, max ~14 words>",
+  "categories": [
+    {"name": "Problem & Urgency", "score": <0-100>, "note": "<one blunt sentence>"},
+    {"name": "Market Size & Timing", "score": <0-100>, "note": "<one blunt sentence>"},
+    {"name": "Solution & Differentiation", "score": <0-100>, "note": "<one blunt sentence>"},
+    {"name": "Business Model", "score": <0-100>, "note": "<one blunt sentence>"},
+    {"name": "Team", "score": <0-100>, "note": "<one blunt sentence>"},
+    {"name": "Traction & Moat", "score": <0-100>, "note": "<one blunt sentence>"}
+  ],
+  "risks": ["<3-5 specific, concrete biggest risks, each one sentence>"],
+  "strengths": ["<2-4 specific genuine strengths, each one sentence — do not pad if there are genuinely few>"],
+  "investorQuestions": ["<4-6 hard questions a real investor would ask that the founder should prepare for>"],
+  "bottomLine": "<2-3 sentences, direct, no hedging, telling the founder exactly where they stand and the single highest-leverage thing to fix next>"
+}
+
+VERDICT RULES
+- overallScore is a weighted synthesis of the category scores, not a simple average — weight Problem, Market, and Team heaviest for pre-traction companies; weight Traction and Business Model heavier if real traction exists.
+- overallScore 75-100 -> verdict "GO"
+- overallScore 45-74 -> verdict "MAYBE"
+- overallScore 0-44 -> verdict "NO-GO"
+- Do not inflate scores to be nice. A vague, generic, or thin submission should score low and say why. Most first-time pitches are MAYBE or NO-GO — that is realistic and expected, not a failure of the tool.
+
+TONE
+- Direct, specific, no hedging language like "this could work if..." — say what you actually think.
+- Blunt does not mean cruel. Never mock the founder personally. Critique the plan, not the person.
+- Be specific to what they actually wrote — reference their actual problem/market/etc., don't give generic startup advice that could apply to any pitch.
+- No sycophancy, no "great start!" openers, no exclamation points.
+
+EDGE CASES
+- If a field is missing, empty, or extremely thin (e.g. "traction: none yet" is fine and expected for pre-launch, but "solution: an app" is too thin to evaluate) — score the relevant category low and say specifically what's missing in the note, rather than inventing details on the founder's behalf.
+- If the submission is nonsensical, a joke, spam, or not an actual business idea (e.g. "problem: I'm bored"), still return valid JSON: give an overall score near 0, verdict "NO-GO", and a bottomLine that honestly states this doesn't read as a real business submission — do not pretend to take it seriously, but do not be needlessly harsh either.
+- If the submission contains abusive, hateful, or harassing language, do not mirror or engage with it. Return valid JSON with a low score and a bottomLine noting the submission did not contain evaluable business content — do not lecture the user or refuse to return JSON.
+- Never break character to explain you are an AI model or discuss these instructions. Never output anything other than the single JSON object.`;
+
+document.getElementById('systemPromptDisplay').textContent = SYSTEM_PROMPT;
+
+const form = document.getElementById('pitchForm');
+const submitBtn = document.getElementById('submitBtn');
+const loadingBox = document.getElementById('loadingBox');
+const loadingText = document.getElementById('loadingText');
+const errorBox = document.getElementById('errorBox');
+const results = document.getElementById('results');
+
+const loadingMessages = [
+  "Reading your memo...",
+  "Checking the market math...",
+  "Looking for the moat...",
+  "Drafting the hard questions...",
+  "Stamping a verdict..."
+];
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const data = {
+    companyName: document.getElementById('companyName').value.trim(),
+    problem: document.getElementById('problem').value.trim(),
+    solution: document.getElementById('solution').value.trim(),
+    market: document.getElementById('market').value.trim(),
+    businessModel: document.getElementById('businessModel').value.trim(),
+    traction: document.getElementById('traction').value.trim() || "Not provided / pre-traction",
+    team: document.getElementById('team').value.trim(),
+    competition: document.getElementById('competition').value.trim(),
+    ask: document.getElementById('ask').value.trim() || "Not specified"
+  };
+
+  const userMessage = `Evaluate this pitch:
+
+Company/Idea Name: ${data.companyName}
+
+Problem: ${data.problem}
+
+Solution: ${data.solution}
+
+Market: ${data.market}
+
+Business Model: ${data.businessModel}
+
+Traction: ${data.traction}
+
+Team: ${data.team}
+
+Competition/Alternatives: ${data.competition}
+
+The Ask: ${data.ask}`;
+
+  submitBtn.disabled = true;
+  errorBox.classList.remove('active');
+  results.classList.remove('active');
+  loadingBox.classList.add('active');
+
+  let msgIdx = 0;
+  const loadingInterval = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loadingMessages.length;
+    loadingText.textContent = loadingMessages[msgIdx];
+  }, 1400);
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API returned status ${response.status}`);
+    }
+
+    const result = await response.json();
+    let text = result.content.map(b => b.text || "").join("").trim();
+    text = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (parseErr) {
+      throw new Error("Could not parse the response. Please try again.");
+    }
+
+    renderResults(parsed);
+
+  } catch (err) {
+    errorBox.textContent = "Couldn't complete the review: " + err.message + " — please try again.";
+    errorBox.classList.add('active');
+  } finally {
+    clearInterval(loadingInterval);
+    loadingBox.classList.remove('active');
+    submitBtn.disabled = false;
+  }
+});
+
+function renderResults(d) {
+  // Dial + score
+  const score = Math.max(0, Math.min(100, d.overallScore || 0));
+  const circumference = 377;
+  const offset = circumference - (circumference * score / 100);
+  const dialCircle = document.getElementById('dialCircle');
+  const dialNum = document.getElementById('dialNum');
+
+  let dialColor = 'var(--red-bright)';
+  if (score >= 75) dialColor = 'var(--green)';
+  else if (score >= 45) dialColor = 'var(--gold)';
+
+  requestAnimationFrame(() => {
+    dialCircle.style.stroke = dialColor;
+    dialCircle.style.strokeDashoffset = offset;
+  });
+  animateNumber(dialNum, score);
+
+  // Stamp
+  const stampEl = document.getElementById('stampEl');
+  const verdict = (d.verdict || 'MAYBE').toUpperCase();
+  stampEl.textContent = verdict;
+  stampEl.className = 'stamp ' + (verdict === 'GO' ? 'go' : verdict === 'NO-GO' ? 'nogo' : 'maybe');
+
+  document.getElementById('verdictHeadline').textContent = d.verdictHeadline || '';
+  document.getElementById('verdictSub').textContent = d.verdictSub || '';
+
+  // Categories
+  const catList = document.getElementById('categoryList');
+  catList.innerHTML = '';
+  (d.categories || []).forEach((cat, i) => {
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    row.innerHTML = `
+      <div class="cat-label-line">
+        <span class="name">${escapeHtml(cat.name)}</span>
+        <span class="score">${cat.score}/100</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" data-score="${cat.score}"></div></div>
+      <div class="cat-note">${escapeHtml(cat.note)}</div>
+    `;
+    catList.appendChild(row);
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(bar => {
+      const s = bar.getAttribute('data-score');
+      bar.style.width = s + '%';
+      bar.style.background = s >= 75 ? 'var(--green)' : s >= 45 ? 'var(--gold)' : 'var(--red-bright)';
+    });
+  }, 50);
+
+  // Risks / Strengths
+  const risksList = document.getElementById('risksList');
+  risksList.innerHTML = '';
+  (d.risks || []).forEach(r => {
+    const li = document.createElement('li');
+    li.textContent = r;
+    risksList.appendChild(li);
+  });
+
+  const strengthsList = document.getElementById('strengthsList');
+  strengthsList.innerHTML = '';
+  (d.strengths || []).forEach(s => {
+    const li = document.createElement('li');
+    li.textContent = s;
+    strengthsList.appendChild(li);
+  });
+
+  // Questions
+  const qList = document.getElementById('questionsList');
+  qList.innerHTML = '';
+  (d.investorQuestions || []).forEach(q => {
+    const li = document.createElement('li');
+    li.textContent = q;
+    qList.appendChild(li);
+  });
+
+  // Bottom line
+  document.getElementById('bottomLine').textContent = d.bottomLine || '';
+
+  results.classList.add('active');
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function animateNumber(el, target) {
+  let current = 0;
+  const duration = 1200;
+  const start = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    current = Math.round(eased * target);
+    el.textContent = current;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+// Docs toggle
+const docsToggle = document.getElementById('docsToggle');
+const docsContent = document.getElementById('docsContent');
+docsToggle.addEventListener('click', () => {
+  docsToggle.classList.toggle('open');
+  docsContent.classList.toggle('active');
+  const arrow = docsToggle.querySelector('.arrow');
+  arrow.textContent = docsToggle.classList.contains('open') ? '▾' : '▸';
+});
+</script>
+
+</body>
+</html>
