@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workflow Architect — MySQL → PostgreSQL Migration</title>
+<style>
+  :root{
+    --bg:#0a0e13;
+    --bg-panel:#10161d;
+    --bg-panel-2:#141c25;
+    --line:#212b35;
+    --text:#dbe4ec;
+    --text-dim:#8a99a8;
+    --text-faint:#5a6773;
+    --mysql:#f2a65a;
+    --pg:#4fd1c5;
+    --flow:#8b7fd6;
+    --danger:#e0716b;
+    --good:#7bc67e;
+    --radius:3px;
+    --mono: 'SF Mono', 'Consolas', 'Menlo', 'Courier New', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Helvetica, Arial, sans-serif;
+  }
+  [data-theme="light"]{
+    --bg:#f2f0ea;
+    --bg-panel:#ffffff;
+    --bg-panel-2:#f7f5f0;
+    --line:#dcd7cb;
+    --text:#20242b;
+    --text-dim:#5c6672;
+    --text-faint:#8b93a0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    line-height:1.55; font-size:15px; transition:background .3s,color .3s;
+    padding-bottom:80px;
+  }
+  ::selection{background:var(--pg); color:#04201d;}
+
+  /* ---------- layout scaffolding ---------- */
+  .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+  a{color:inherit;}
+  code, .mono{font-family:var(--mono);}
+
+  /* ---------- top bar ---------- */
+  header.topbar{
+    position:sticky; top:0; z-index:50;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1180px; margin:0 auto; padding:14px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px; font-family:var(--mono); font-size:14px; letter-spacing:.02em;}
+  .brand b{font-weight:700;}
+  .brand .dot{color:var(--pg);}
+  .topbar-actions{display:flex; align-items:center; gap:10px;}
+  .btn{
+    font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    background:transparent; color:var(--text-dim); border:1px solid var(--line);
+    padding:8px 12px; border-radius:var(--radius); cursor:pointer; transition:all .15s;
+  }
+  .btn:hover{color:var(--text); border-color:var(--text-dim);}
+  .btn.primary{color:var(--pg); border-color:var(--pg);}
+  .btn.primary:hover{background:var(--pg); color:#04201d;}
+  .progress-pill{
+    font-family:var(--mono); font-size:12px; color:var(--text-dim);
+    border:1px solid var(--line); border-radius:20px; padding:6px 12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .progress-pill .bar{width:60px; height:4px; background:var(--line); border-radius:2px; overflow:hidden;}
+  .progress-pill .bar span{display:block; height:100%; background:linear-gradient(90deg,var(--mysql),var(--pg)); width:0%; transition:width .4s;}
+
+  /* ---------- hero ---------- */
+  .hero{padding:64px 0 40px; border-bottom:1px solid var(--line); position:relative; overflow:hidden;}
+  .hero-eyebrow{font-family:var(--mono); font-size:12px; color:var(--text-faint); letter-spacing:.14em; text-transform:uppercase; margin-bottom:18px;}
+  .hero h1{
+    font-family:var(--mono); font-weight:700; font-size:clamp(28px,4.2vw,50px);
+    line-height:1.08; letter-spacing:-0.01em; max-width:820px;
+  }
+  .hero h1 .arrow{color:var(--flow); padding:0 6px;}
+  .hero h1 .src{color:var(--mysql);}
+  .hero h1 .dst{color:var(--pg);}
+  .hero p.lede{margin-top:20px; max-width:600px; color:var(--text-dim); font-size:16px;}
+  .hero-meta{display:flex; gap:28px; margin-top:34px; flex-wrap:wrap;}
+  .hero-meta .m{font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .hero-meta .m b{display:block; font-size:20px; color:var(--text); font-weight:700; margin-top:2px;}
+
+  /* animated pipeline strip in hero */
+  .pipe-strip{margin-top:40px; position:relative; height:64px;}
+  .pipe-track{position:absolute; top:50%; left:0; right:0; height:2px; background:var(--line); transform:translateY(-50%);}
+  .pipe-track::after{
+    content:''; position:absolute; top:0; left:0; height:100%; width:40%;
+    background:linear-gradient(90deg, var(--mysql), var(--flow), var(--pg));
+    animation:flow 3.2s linear infinite;
+  }
+  @keyframes flow{0%{left:-40%;}100%{left:100%;}}
+  .pipe-nodes{position:relative; display:flex; justify-content:space-between; align-items:center; height:100%;}
+  .pipe-node{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:20px;
+    padding:8px 16px; font-family:var(--mono); font-size:12px; z-index:2; white-space:nowrap;
+  }
+  .pipe-node.a{border-color:var(--mysql); color:var(--mysql);}
+  .pipe-node.b{border-color:var(--pg); color:var(--pg);}
+  @media(prefers-reduced-motion:reduce){.pipe-track::after{animation:none; width:100%;}}
+
+  /* ---------- nav rail ---------- */
+  nav.stagenav{
+    position:sticky; top:57px; z-index:40; background:var(--bg);
+    border-bottom:1px solid var(--line); overflow-x:auto; white-space:nowrap;
+  }
+  nav.stagenav .wrap{display:flex; gap:2px; padding:0 28px;}
+  nav.stagenav button{
+    font-family:var(--mono); font-size:12px; color:var(--text-faint);
+    background:none; border:none; border-bottom:2px solid transparent;
+    padding:12px 14px; cursor:pointer; transition:all .15s; flex-shrink:0;
+  }
+  nav.stagenav button:hover{color:var(--text);}
+  nav.stagenav button.active{color:var(--pg); border-bottom-color:var(--pg);}
+
+  /* ---------- sections ---------- */
+  section{padding:56px 0; border-bottom:1px solid var(--line);}
+  .section-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px; flex-wrap:wrap;}
+  .section-num{font-family:var(--mono); color:var(--text-faint); font-size:13px;}
+  .section-head h2{font-family:var(--mono); font-size:24px; font-weight:700;}
+  .section-sub{color:var(--text-dim); max-width:640px; margin-bottom:32px; font-size:14.5px;}
+
+  /* stage card */
+  .stage{background:var(--bg-panel); border:1px solid var(--line); border-radius:6px; padding:32px; margin-bottom:28px;}
+  .stage-top{display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap; margin-bottom:18px;}
+  .stage-title{display:flex; align-items:center; gap:12px;}
+  .stage-index{
+    font-family:var(--mono); font-size:13px; width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:50%; color:var(--text-dim); flex-shrink:0;
+  }
+  .stage-title h3{font-size:19px; font-weight:700;}
+  .stage-time{font-family:var(--mono); font-size:12px; color:var(--text-faint); border:1px solid var(--line); padding:4px 10px; border-radius:20px;}
+  .stage-check{display:flex; align-items:center; gap:8px; cursor:pointer; font-family:var(--mono); font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em;}
+  .stage-check input{accent-color:var(--pg); width:15px; height:15px; cursor:pointer;}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:28px;}
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:820px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+
+  .blocklabel{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint); margin-bottom:10px; display:block;}
+  ul.tidy{list-style:none;}
+  ul.tidy li{padding-left:16px; position:relative; margin-bottom:6px; font-size:14px; color:var(--text-dim);}
+  ul.tidy li::before{content:'—'; position:absolute; left:0; color:var(--text-faint);}
+  ul.tidy.mistakes li::before{content:'✕'; color:var(--danger);}
+  ul.tidy.best li::before{content:'✓'; color:var(--good);}
+
+  .block{margin-bottom:22px;}
+
+  /* tool cards */
+  .tool-card{
+    border:1px solid var(--line); border-radius:5px; padding:16px; background:var(--bg-panel-2);
+    margin-bottom:10px;
+  }
+  .tool-card .tool-name{font-weight:700; font-size:14.5px; display:flex; justify-content:space-between; align-items:center;}
+  .tool-card .tag{font-family:var(--mono); font-size:10px; color:var(--pg); border:1px solid var(--pg); padding:2px 7px; border-radius:20px; text-transform:uppercase;}
+  .tool-card p{color:var(--text-dim); font-size:13px; margin-top:6px;}
+  .tool-card .alt{margin-top:8px; font-size:12px; color:var(--text-faint);}
+
+  .promptbox{
+    background:#05080c; border:1px solid var(--line); border-radius:5px; padding:14px 16px;
+    font-family:var(--mono); font-size:12.5px; color:var(--pg); position:relative; white-space:pre-wrap;
+  }
+  [data-theme="light"] .promptbox{background:#111318; color:#7fe0d4;}
+  .promptbox .copy{
+    position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:10px;
+    background:none; border:1px solid var(--line); color:var(--text-faint); padding:3px 8px; border-radius:3px; cursor:pointer;
+  }
+  .promptbox .copy:hover{color:var(--text);}
+
+  .output-badge{display:inline-block; font-family:var(--mono); font-size:11px; color:var(--flow); border:1px solid var(--flow); padding:4px 10px; border-radius:20px; margin-top:4px;}
+
+  .notes-area{width:100%; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:5px; color:var(--text); font-family:var(--sans); font-size:13px; padding:10px; resize:vertical; min-height:60px;}
+  .notes-area:focus{outline:1px solid var(--pg);}
+
+  /* comparison table */
+  table.cmp{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:10px 14px; text-align:left;}
+  table.cmp th{font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--text-faint); background:var(--bg-panel-2);}
+  table.cmp td.mysql-col{color:var(--mysql);}
+  table.cmp td.pg-col{color:var(--pg);}
+
+  /* decision tree */
+  .tree{display:flex; flex-direction:column; gap:0; align-items:center;}
+  .tree-q{
+    background:var(--bg-panel-2); border:1px solid var(--line); padding:14px 20px; border-radius:5px;
+    font-size:14px; text-align:center; max-width:420px; cursor:pointer;
+  }
+  .tree-q:hover{border-color:var(--pg);}
+  .tree-branches{display:flex; gap:14px; margin:14px 0; flex-wrap:wrap; justify-content:center;}
+  .tree-answer{
+    background:var(--bg-panel); border:1px solid var(--flow); color:var(--flow); border-radius:20px;
+    padding:8px 16px; font-family:var(--mono); font-size:12px; cursor:pointer;
+  }
+  .tree-result{
+    margin-top:16px; padding:16px 20px; border:1px solid var(--pg); border-radius:5px; background:var(--bg-panel-2);
+    max-width:520px; text-align:left; display:none; font-size:13.5px; color:var(--text-dim);
+  }
+  .tree-result.show{display:block;}
+  .tree-result b{color:var(--pg);}
+
+  /* diagram */
+  .diagram{border:1px solid var(--line); border-radius:6px; padding:28px; background:var(--bg-panel-2); overflow-x:auto;}
+  .diagram-row{display:flex; align-items:center; gap:0; min-width:900px;}
+  .diagram-step{
+    flex:1; text-align:center; position:relative; padding:0 8px;
+  }
+  .diagram-step .box{
+    border:1px solid var(--line); border-radius:5px; padding:14px 10px; background:var(--bg-panel);
+    font-family:var(--mono); font-size:11.5px; transition:border-color .2s;
+  }
+  .diagram-step:hover .box{border-color:var(--pg);}
+  .diagram-step .box b{display:block; font-size:12.5px; margin-bottom:4px;}
+  .diagram-step::after{
+    content:'→'; position:absolute; right:-4px; top:50%; transform:translateY(-50%); color:var(--text-faint); font-size:16px;
+  }
+  .diagram-step:last-child::after{content:'';}
+
+  /* bookmarks / saved */
+  .bookmark-btn{background:none; border:none; cursor:pointer; color:var(--text-faint); font-size:16px; line-height:1;}
+  .bookmark-btn.active{color:var(--mysql);}
+
+  /* footer conclusion sections */
+  .stack-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px;}
+  .stack-item{border:1px solid var(--line); border-radius:5px; padding:14px; background:var(--bg-panel);}
+  .stack-item .role{font-family:var(--mono); font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em;}
+  .stack-item .name{font-weight:700; margin-top:4px;}
+
+  .kw-cloud{display:flex; flex-wrap:wrap; gap:8px;}
+  .kw{font-family:var(--mono); font-size:12px; border:1px solid var(--line); border-radius:20px; padding:6px 12px; color:var(--text-dim);}
+
+  .res-list{list-style:none;}
+  .res-list li{padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; display:flex; justify-content:space-between; gap:10px;}
+  .res-list li span.type{font-family:var(--mono); font-size:10px; color:var(--text-faint); text-transform:uppercase; flex-shrink:0;}
+
+  footer{padding:40px 0 20px; text-align:center; color:var(--text-faint); font-family:var(--mono); font-size:11px;}
+
+  /* print */
+  @media print{
+    header.topbar, nav.stagenav, .btn, .bookmark-btn, .pipe-strip{display:none !important;}
+    body{background:#fff; color:#000;}
+    .stage, .diagram, table.cmp{border-color:#999;}
+  }
+
+  @media(max-width:640px){
+    .hero{padding:44px 0 30px;}
+    .stage{padding:20px;}
+    section{padding:36px 0;}
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="dot">●</span> AI Workflow Architect <span style="color:var(--text-faint)">/ backend·db</span></div>
+    <div class="topbar-actions">
+      <div class="progress-pill">Stage progress <div class="bar"><span id="progFill"></span></div> <span id="progText">0/7</span></div>
+      <button class="btn" id="printBtn">Print</button>
+      <button class="btn" id="themeBtn">Light mode</button>
+    </div>
+  </div>
+</header>
+
+<nav class="stagenav" id="stageNav">
+  <div class="wrap" id="stageNavInner"></div>
+</nav>
+
+<div class="wrap">
+  <section class="hero" style="border-bottom:none;">
+    <div class="hero-eyebrow">Workflow blueprint — generated for your scope</div>
+    <h1>MySQL <span class="arrow">→</span> PostgreSQL<br>relational database migration</h1>
+    <p class="lede">A complete, end-to-end execution plan — not general advice — for moving a production relational schema and its data from MySQL to PostgreSQL, with the AI tooling to use at every stage.</p>
+    <div class="hero-meta">
+      <div class="m">Stages<b>7</b></div>
+      <div class="m">Est. total time<b>3–6 weeks</b></div>
+      <div class="m">Risk profile<b>Medium–High</b></div>
+      <div class="m">Team size<b>1–4 engineers</b></div>
+    </div>
+    <div class="pipe-strip">
+      <div class="pipe-track"></div>
+      <div class="pipe-nodes">
+        <div class="pipe-node a">MySQL 8.x</div>
+        <div class="pipe-node">Schema convert</div>
+        <div class="pipe-node">Data migrate</div>
+        <div class="pipe-node">Validate</div>
+        <div class="pipe-node b">PostgreSQL 16</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="stagesRoot"></div>
+
+<div class="wrap">
+
+  <section id="diagram-section">
+    <div class="section-head"><span class="section-num">DIAGRAM</span><h2>Full pipeline, top to bottom</h2></div>
+    <p class="section-sub">Click any step to jump to its stage.</p>
+    <div class="diagram">
+      <div class="diagram-row" id="diagramRow"></div>
+    </div>
+  </section>
+
+  <section id="compare-section">
+    <div class="section-head"><span class="section-num">COMPARE</span><h2>MySQL vs. PostgreSQL — what actually changes</h2></div>
+    <p class="section-sub">The differences that drive most of the migration risk and rework.</p>
+    <table class="cmp">
+      <thead><tr><th>Concern</th><th>MySQL</th><th>PostgreSQL</th></tr></thead>
+      <tbody id="cmpBody"></tbody>
+    </table>
+  </section>
+
+  <section id="tree-section">
+    <div class="section-head"><span class="section-num">DECIDE</span><h2>Which migration tool should you use?</h2></div>
+    <p class="section-sub">A quick decision tree based on data size, downtime tolerance, and team skill.</p>
+    <div class="tree" id="treeRoot"></div>
+  </section>
+
+  <section id="summary-section">
+    <div class="section-head"><span class="section-num">SUMMARY</span><h2>Workflow summary</h2></div>
+    <p class="section-sub" id="summaryText" style="max-width:760px;"></p>
+  </section>
+
+  <section id="stack-section">
+    <div class="section-head"><span class="section-num">STACK</span><h2>Recommended AI stack</h2></div>
+    <div class="stack-grid" id="stackGrid"></div>
+  </section>
+
+  <div class="grid-2" style="margin-bottom:56px;">
+    <section style="border-bottom:none; padding-top:0;">
+      <div class="section-head"><span class="section-num">LEARN</span><h2>Learning resources</h2></div>
+      <ul class="res-list" id="learnList"></ul>
+    </section>
+    <section style="border-bottom:none; padding-top:0;">
+      <div class="section-head"><span class="section-num">CONNECT</span><h2>Communities</h2></div>
+      <ul class="res-list" id="commList"></ul>
+    </section>
+  </div>
+
+  <section id="keywords-section">
+    <div class="section-head"><span class="section-num">SEARCH</span><h2>Search keywords</h2></div>
+    <div class="kw-cloud" id="kwCloud"></div>
+  </section>
+
+  <section id="prompts-section">
+    <div class="section-head"><span class="section-num">PROMPTS</span><h2>Additional AI prompts to keep handy</h2></div>
+    <div id="extraPrompts"></div>
+  </section>
+
+  <section id="future-section" style="border-bottom:none;">
+    <div class="section-head"><span class="section-num">NEXT</span><h2>Future automation opportunities</h2></div>
+    <ul class="tidy" id="futureList" style="max-width:720px;"></ul>
+  </section>
+
+</div>
+
+<footer>AI WORKFLOW ARCHITECT — MySQL → PostgreSQL — saved locally in your browser, nothing leaves this page.</footer>
+
+<script>
+/* ============================= DATA ============================= */
+const STAGES = [
+  {
+    id:'assess', title:'Assessment & Migration Planning', time:'3–5 days',
+    objectives:[
+      'Inventory the full MySQL footprint: schemas, data volume, stored procedures, triggers, and dependent applications.',
+      'Choose a migration strategy: big-bang cutover vs. phased/dual-write, and a downtime budget.',
+      'Establish rollback criteria and a go/no-go checklist before any conversion work starts.'
+    ],
+    tasks:[
+      'Export full schema DDL and catalog every table, index, view, trigger, and stored procedure.',
+      'Profile data volume, row counts, and growth rate per table to size the migration window.',
+      'List every application, service, ORM, and BI tool that touches the database directly.',
+      'Identify MySQL-specific features in use (AUTO_INCREMENT, ENUM, ON DUPLICATE KEY, fulltext indexes, JSON columns).',
+      'Draft the cutover plan: maintenance window, DNS/connection-string swap, rollback trigger conditions.'
+    ],
+    tools:[
+      {name:'Claude (Opus/Sonnet)', tag:'Primary', why:'Reads a full schema dump and produces a structured inventory plus a risk-ranked list of MySQL-specific constructs that will need manual attention in Postgres.', alt:'ChatGPT (GPT-5), Gemini 2.5 Pro'},
+      {name:'pgLoader / AWS Schema Conversion Tool', tag:'Scan', why:'Purpose-built to scan a MySQL instance and produce an automated compatibility report before any AI is involved.', alt:'Ispirer SQLWays, DBConvert'},
+      {name:'dbdiagram.io + AI schema summarizer', tag:'Visualize', why:'Turns the raw DDL into an ER diagram so the team can sanity-check relationships before conversion.', alt:'DrawSQL, Lucidchart AI'}
+    ],
+    prompts:[
+      'I am migrating a MySQL 8 database to PostgreSQL 16. Here is my full `SHOW CREATE TABLE` output for all tables: [paste DDL]. Identify every MySQL-specific feature (AUTO_INCREMENT, ENUM, TINYINT(1) booleans, ON UPDATE CURRENT_TIMESTAMP, fulltext indexes) and rank them by conversion risk (low/medium/high) with a one-line reason for each.'
+    ],
+    best:[
+      'Freeze non-essential schema changes on MySQL once the inventory is taken as your source of truth.',
+      'Size the migration window from the largest table\'s row count, not the average.',
+      'Get written sign-off on the downtime budget from stakeholders before scheduling anything.'
+    ],
+    mistakes:[
+      'Starting schema conversion before every stored procedure and trigger is inventoried.',
+      'Assuming replication lag will be zero — always budget buffer time.',
+      'Not identifying every consumer of the database, including ad-hoc BI/reporting connections.'
+    ],
+    outputs:['Schema + dependency inventory doc', 'Risk-ranked feature list', 'Cutover plan with rollback criteria'],
+    efficiency:'Run the inventory prompt once per logical schema domain (billing, users, inventory) rather than the whole database at once — smaller chunks get more thorough answers.'
+  },
+  {
+    id:'convert', title:'Schema Conversion & Data Modeling', time:'4–7 days',
+    objectives:[
+      'Translate every MySQL table definition into idiomatic PostgreSQL DDL.',
+      'Redesign the pieces that don\'t map 1:1 (auto-increment → sequences/IDENTITY, ENUM, TINYINT booleans, collations).',
+      'Decide where to modernize the model instead of literally porting it (e.g., JSON columns → JSONB, composite types).'
+    ],
+    tasks:[
+      'Convert AUTO_INCREMENT columns to PostgreSQL GENERATED ALWAYS AS IDENTITY.',
+      'Rewrite MySQL ENUM columns as either a CHECK constraint or a native Postgres ENUM type.',
+      'Convert TINYINT(1) to BOOLEAN and audit every place the app reads 0/1 as truthy.',
+      'Rewrite stored procedures and triggers from MySQL procedural SQL into PL/pgSQL.',
+      'Re-map collations and character sets (utf8mb4 → Postgres UTF8) and re-check case-sensitivity assumptions.',
+      'Recreate indexes, including converting MySQL fulltext indexes to Postgres GIN/tsvector.'
+    ],
+    tools:[
+      {name:'Claude (Opus/Sonnet)', tag:'Primary', why:'Best at holding an entire schema in context and producing consistent, idiomatic Postgres DDL in one pass, including flagging semantic differences (not just syntax).', alt:'GPT-5, Gemini 2.5 Pro'},
+      {name:'pgLoader', tag:'Automate', why:'Can auto-convert schema and data in one step for straightforward tables, freeing AI review time for the genuinely tricky ones.', alt:'AWS SCT, ora2pg-style converters (community forks support MySQL)'},
+      {name:'Claude Code / Cursor', tag:'Codegen', why:'Applies the schema rewrite directly across ORM models and migration files in the codebase, not just the raw SQL.', alt:'GitHub Copilot, Windsurf'}
+    ],
+    prompts:[
+      'Convert this MySQL table DDL to idiomatic PostgreSQL 16: [paste DDL]. Use GENERATED ALWAYS AS IDENTITY instead of AUTO_INCREMENT, convert TINYINT(1) to BOOLEAN, convert ENUM to a native Postgres ENUM type, and flag any collation or case-sensitivity behavior that will change.',
+      'Rewrite this MySQL stored procedure as a PostgreSQL PL/pgSQL function, preserving the exact business logic. Explain any behavioral differences in error handling or transaction semantics: [paste procedure]'
+    ],
+    best:[
+      'Convert and review schema domain-by-domain, not as one giant diff.',
+      'Write the ENUM-vs-CHECK-constraint decision down once and apply it consistently.',
+      'Keep a side-by-side mapping doc: MySQL type → Postgres type → reason, for future audits.'
+    ],
+    mistakes:[
+      'Silently converting TINYINT(1) to INTEGER instead of BOOLEAN, breaking app logic.',
+      'Forgetting that Postgres identifiers are case-sensitive when quoted, unlike MySQL defaults.',
+      'Copying MySQL\'s implicit type coercion assumptions into application code that now hits strict Postgres typing.'
+    ],
+    outputs:['Postgres-ready DDL for all tables', 'Type-mapping reference doc', 'Converted stored procedures/functions'],
+    efficiency:'Ask the model to output a mapping table (old type → new type → reasoning) alongside the DDL — it becomes your review checklist and audit trail in one shot.'
+  },
+  {
+    id:'tooling', title:'Migration Tooling & Scripting', time:'3–5 days',
+    objectives:[
+      'Stand up the ETL pipeline that will actually move the data.',
+      'Build validation and reconciliation scripts before the real migration run, not after.',
+      'Establish a repeatable, re-runnable migration process for rehearsal and cutover.'
+    ],
+    tasks:[
+      'Choose and configure the migration engine (pgLoader, AWS DMS, custom scripts, or a dual-write app-layer approach).',
+      'Write transformation scripts for the type conversions identified in the previous stage.',
+      'Build row-count and checksum reconciliation scripts per table.',
+      'Set up a staging Postgres instance that mirrors production for rehearsal runs.',
+      'Script idempotent re-runs so a failed migration attempt can be safely retried.'
+    ],
+    tools:[
+      {name:'pgLoader', tag:'Primary', why:'Native MySQL→Postgres migration engine that handles type casting, encoding, and constraints in one configurable pass.', alt:'AWS Database Migration Service, Airbyte'},
+      {name:'Claude Code', tag:'Scripting', why:'Generates and debugs the reconciliation/validation scripts (Python or SQL) against your actual schema, and can iterate quickly when a run fails midway.', alt:'GitHub Copilot, GPT-5 in an IDE agent'},
+      {name:'Airbyte / Fivetran', tag:'Alt. ETL', why:'Useful when you need ongoing dual-write or CDC (change data capture) during a phased cutover rather than a one-shot dump-and-load.', alt:'Debezium for CDC-based streaming replication'}
+    ],
+    prompts:[
+      'Write a Python script using psycopg2 and mysql-connector that performs a row-count and checksum (MD5 of concatenated columns) comparison between a MySQL table and its migrated PostgreSQL counterpart, and reports any mismatched primary keys.',
+      'Generate a pgLoader .load configuration file to migrate all tables from MySQL database `appdb` to PostgreSQL, casting TINYINT(1) to boolean and MySQL ENUM columns to text, with error logging to a file.'
+    ],
+    best:[
+      'Make every migration script idempotent — re-running it should never duplicate data.',
+      'Log every transformation decision (e.g., null-handling, timezone conversion) so it can be audited later.',
+      'Do a full rehearsal migration into staging before touching production.'
+    ],
+    mistakes:[
+      'Skipping the staging rehearsal and discovering type-cast errors during the real cutover.',
+      'Not handling timezone conversion explicitly — MySQL TIMESTAMP and Postgres timestamptz behave differently.',
+      'Building validation scripts after the migration instead of before, so there\'s no baseline to compare against.'
+    ],
+    outputs:['Configured ETL pipeline', 'Reconciliation/validation scripts', 'Staging environment migration log'],
+    efficiency:'Have the AI generate the reconciliation script first, against dummy data, so it\'s tested and ready before your first real rehearsal run — don\'t build it under time pressure during cutover.'
+  },
+  {
+    id:'migrate', title:'Data Migration & Validation', time:'2–4 days (+ rehearsals)',
+    objectives:[
+      'Execute the rehearsal migration end-to-end in staging, then the real migration.',
+      'Validate row counts, checksums, and referential integrity after every load.',
+      'Catch and fix silent data-corruption issues (truncation, encoding, timezone drift) before cutover.'
+    ],
+    tasks:[
+      'Run the full pgLoader/ETL job against staging and capture timing metrics.',
+      'Run reconciliation scripts and resolve every mismatch before proceeding.',
+      'Spot-check high-risk tables manually (financial data, timestamps, JSON blobs).',
+      'Rebuild indexes and refresh statistics (ANALYZE) after the bulk load.',
+      'Repeat the full rehearsal at least once until the run is clean and its duration is known.'
+    ],
+    tools:[
+      {name:'Claude (Opus/Sonnet)', tag:'Primary', why:'Analyzes reconciliation script output, explains discrepancies in plain terms, and proposes the specific fix — far faster than manually diffing rows.', alt:'GPT-5, Gemini 2.5 Pro'},
+      {name:'pgAdmin / DBeaver + AI SQL assistant', tag:'Inspect', why:'Lets you visually spot-check migrated tables and run ad-hoc AI-assisted SQL queries against both databases side by side.', alt:'DataGrip with AI assistant'},
+      {name:'Great Expectations (with AI-authored rules)', tag:'Data QA', why:'Codifies data-quality expectations (nullability, ranges, uniqueness) so validation is automated and repeatable, not manual spot-checks.', alt:'dbt tests, Soda Core'}
+    ],
+    prompts:[
+      'Here is the output of my row-count and checksum reconciliation script showing 47 mismatched rows in the `orders` table: [paste output]. Analyze the pattern of mismatches and suggest the most likely root cause (encoding, truncation, timezone, or type-cast issue).',
+      'Write a set of Great Expectations validation rules for this PostgreSQL table based on its schema and sample data, covering null constraints, value ranges, and referential integrity: [paste schema/sample rows]'
+    ],
+    best:[
+      'Never skip a rehearsal run — the first real migration attempt should not be the first time the full pipeline runs.',
+      'Validate referential integrity (foreign keys), not just row counts.',
+      'Run ANALYZE on all tables immediately after a bulk load so the query planner has fresh statistics.'
+    ],
+    mistakes:[
+      'Treating "row counts match" as sufficient validation without checksumming content.',
+      'Forgetting to rebuild indexes after a bulk COPY-based load, leaving queries slow.',
+      'Not testing with production-scale data volume, so timing estimates are wildly wrong on cutover day.'
+    ],
+    outputs:['Clean rehearsal migration log', 'Validated row-count/checksum report', 'Known, tested migration duration'],
+    efficiency:'Keep the reconciliation script\'s output in a consistent, parseable format so you can feed it directly to the AI for triage instead of manually summarizing it each rehearsal.'
+  },
+  {
+    id:'test', title:'Application Testing & Performance Tuning', time:'5–8 days',
+    objectives:[
+      'Confirm the application behaves identically against Postgres as it did against MySQL.',
+      'Find and fix SQL that relied on MySQL-specific behavior.',
+      'Tune Postgres configuration and query plans for the new workload before go-live.'
+    ],
+    tasks:[
+      'Run the full application test suite against the migrated Postgres staging database.',
+      'Audit raw SQL and ORM queries for MySQL-specific syntax (backticks, LIMIT offset syntax, GROUP BY leniency).',
+      'Load-test with production-like traffic patterns and compare latency to the MySQL baseline.',
+      'Review and tune postgresql.conf (shared_buffers, work_mem, effective_cache_size) for the new instance.',
+      'Run EXPLAIN ANALYZE on the top slow queries and add/adjust indexes as needed.'
+    ],
+    tools:[
+      {name:'Claude Code / Cursor', tag:'Primary', why:'Scans the codebase for MySQL-specific SQL patterns and ORM configuration, and rewrites them for Postgres compatibility across many files at once.', alt:'GitHub Copilot, Sourcegraph Cody'},
+      {name:'pgTune (AI-assisted config review)', tag:'Tune', why:'Generates a starting postgresql.conf based on instance size and workload type, which the AI then refines using your actual EXPLAIN ANALYZE output.', alt:'PgHero, pganalyze'},
+      {name:'k6 / Locust with AI-generated scenarios', tag:'Load test', why:'AI drafts realistic load-test scripts from your actual traffic logs so the performance comparison reflects real usage, not synthetic benchmarks.', alt:'Apache JMeter, Gatling'}
+    ],
+    prompts:[
+      'Scan this codebase for raw SQL queries and ORM calls that rely on MySQL-specific behavior (GROUP BY without full aggregation, backtick identifiers, LIMIT x,y syntax, INSERT IGNORE) and rewrite each one for strict PostgreSQL compatibility: [paste files/directory]',
+      'Here is the EXPLAIN ANALYZE output for a query that runs in 40ms on MySQL but 900ms on PostgreSQL: [paste query + explain output]. Diagnose the likely cause and suggest an index or query rewrite.'
+    ],
+    best:[
+      'Treat every MySQL-specific SQL pattern found as a required fix, not a nice-to-have.',
+      'Compare Postgres performance against MySQL using the same queries and same data volume.',
+      'Tune Postgres memory settings for the actual instance size — defaults are conservative and slow.'
+    ],
+    mistakes:[
+      'Relying on MySQL\'s lenient GROUP BY (returning arbitrary column values) which Postgres rejects outright.',
+      'Not adjusting connection pool settings — Postgres connections are heavier than MySQL\'s.',
+      'Skipping load testing and discovering performance regressions only after go-live.'
+    ],
+    outputs:['Postgres-compatible codebase', 'Tuned postgresql.conf', 'Performance comparison report vs. MySQL baseline'],
+    efficiency:'Batch the codebase scan by module (auth, billing, reporting) so the AI\'s fixes stay reviewable in focused pull requests instead of one unreviewable mega-diff.'
+  },
+  {
+    id:'cutover', title:'Cutover & Production Deployment', time:'1 day (+ standby window)',
+    objectives:[
+      'Execute the production cutover with minimal downtime and a tested rollback path.',
+      'Keep every stakeholder informed in real time during the maintenance window.',
+      'Confirm the application is fully healthy on Postgres before declaring success.'
+    ],
+    tasks:[
+      'Freeze writes to MySQL and run the final delta migration (or complete the dual-write cutover).',
+      'Run the final reconciliation check against the frozen dataset.',
+      'Swap connection strings / DNS / config to point the application at PostgreSQL.',
+      'Run a smoke-test checklist against production immediately after cutover.',
+      'Keep MySQL running read-only as a rollback safety net for an agreed retention window.'
+    ],
+    tools:[
+      {name:'Claude (Opus/Sonnet)', tag:'War room copilot', why:'Acts as a fast second pair of eyes during the live window — triaging error logs and reconciliation output in real time when speed matters most.', alt:'GPT-5, internal on-call runbook + human review'},
+      {name:'PgBouncer', tag:'Connection mgmt', why:'Manages the connection pool cutover cleanly, avoiding connection storms when the app reconnects to the new database.', alt:'Pgpool-II'},
+      {name:'Status page / incident tooling (AI-drafted updates)', tag:'Comms', why:'AI drafts clear, consistent stakeholder updates throughout the maintenance window so communication doesn\'t compete with engineering attention.', alt:'Statuspage, Incident.io'}
+    ],
+    prompts:[
+      'Draft a step-by-step cutover runbook for a MySQL-to-PostgreSQL migration with a 90-minute maintenance window, including explicit rollback trigger conditions and who needs to be notified at each step.',
+      'Here are the application error logs from the first 10 minutes after cutover: [paste logs]. Identify which errors are expected transient reconnection noise versus genuine Postgres compatibility issues that need immediate action.'
+    ],
+    best:[
+      'Rehearse the exact cutover runbook at least once, timed, before the real event.',
+      'Define rollback trigger conditions in writing before the window opens, not during it.',
+      'Keep MySQL read-only and available for a defined retention period as insurance.'
+    ],
+    mistakes:[
+      'Making rollback decisions ad hoc under pressure instead of against pre-agreed criteria.',
+      'Decommissioning the old MySQL instance too early, before confidence is fully established.',
+      'Not load-testing the connection pool reconnect storm that happens the moment the app repoints.'
+    ],
+    outputs:['Completed cutover', 'Final reconciliation sign-off', 'Rollback-ready MySQL instance on standby'],
+    efficiency:'Pre-write every stakeholder comms message as a template beforehand so during the window you\'re only filling in a timestamp and status, not composing prose.'
+  },
+  {
+    id:'postmigrate', title:'Post-Migration Monitoring & Optimization', time:'Ongoing (2 weeks intensive)',
+    objectives:[
+      'Confirm stability under real production load over time, not just the first hour.',
+      'Continue tuning Postgres based on real traffic patterns.',
+      'Fully decommission the MySQL environment once confidence is established.'
+    ],
+    tasks:[
+      'Monitor query latency, error rates, and connection pool health daily for the first two weeks.',
+      'Review slow-query logs weekly and tune indexes/queries iteratively.',
+      'Set up ongoing automated backups and point-in-time recovery on PostgreSQL.',
+      'Document the final architecture and lessons learned for the team.',
+      'Decommission the MySQL instance once the retention window and sign-off criteria are met.'
+    ],
+    tools:[
+      {name:'pganalyze / pgHero', tag:'Primary', why:'Purpose-built Postgres monitoring that surfaces slow queries and index recommendations continuously, feeding directly into AI-assisted tuning sessions.', alt:'Datadog Postgres integration, New Relic'},
+      {name:'Claude (Opus/Sonnet)', tag:'Ongoing tuning', why:'Reviews weekly slow-query digests and proposes prioritized, low-risk optimizations rather than one-off fixes.', alt:'GPT-5, Gemini 2.5 Pro'},
+      {name:'pgBackRest', tag:'Backup/DR', why:'Production-grade backup and point-in-time recovery tooling to replace whatever backup strategy MySQL had.', alt:'WAL-G, managed cloud backups (RDS/Cloud SQL)'}
+    ],
+    prompts:[
+      'Here is this week\'s slow-query digest from pganalyze: [paste digest]. Prioritize the top 5 issues by user impact and suggest the specific index or query change for each, noting any risk of write-performance regression.',
+      'Write a decommissioning checklist for safely retiring a legacy MySQL instance two weeks after a successful PostgreSQL cutover, including data archival and access-revocation steps.'
+    ],
+    best:[
+      'Keep monitoring intensity high for at least two full weeks — issues often surface only at weekly traffic peaks.',
+      'Treat the migration retro as mandatory — document what broke and why for the next migration.',
+      'Automate backup verification, don\'t just assume backups are working.'
+    ],
+    mistakes:[
+      'Declaring victory after 24 hours and immediately deprioritizing monitoring.',
+      'Decommissioning MySQL before a full business cycle (e.g., month-end reporting) has run cleanly on Postgres.',
+      'Not carrying over the alerting thresholds and dashboards that existed for MySQL.'
+    ],
+    outputs:['Stable production Postgres environment', 'Tuning log and decommission checklist', 'Migration retrospective document'],
+    efficiency:'Feed the AI a weekly digest rather than raw logs — a consistent, summarized cadence produces sharper, more prioritized recommendations than ad hoc log dumps.'
+  }
+];
+
+const CMP_ROWS = [
+  ['Auto-incrementing IDs','AUTO_INCREMENT column attribute','SEQUENCE via GENERATED ALWAYS AS IDENTITY'],
+  ['Boolean values','TINYINT(1), 0/1 convention','Native BOOLEAN type (true/false)'],
+  ['Enumerated values','Native ENUM column type','Native ENUM type or CHECK constraint (community best practice)'],
+  ['String case-sensitivity','Case-insensitive comparisons by default (depends on collation)','Case-sensitive by default; use ILIKE or citext for insensitive matching'],
+  ['JSON storage','JSON type (text-based)','JSONB — binary, indexable, generally faster for queries'],
+  ['Full-text search','MATCH...AGAINST with FULLTEXT indexes','tsvector/tsquery with GIN indexes — more powerful, more setup'],
+  ['GROUP BY strictness','Lenient — allows non-aggregated columns','Strict SQL standard — every selected column must be aggregated or grouped'],
+  ['Identifier quoting','Backticks (`table_name`)','Double quotes ("table_name"), and quoting makes names case-sensitive'],
+  ['Upsert syntax','INSERT ... ON DUPLICATE KEY UPDATE','INSERT ... ON CONFLICT ... DO UPDATE'],
+  ['Stored procedures','Procedural SQL (imperative, MySQL dialect)','PL/pgSQL — more powerful but syntactically different, needs a rewrite'],
+];
+
+const TREE = {
+  q:'How large is the dataset and what downtime can you tolerate?',
+  branches:[
+    {label:'< 50GB, some downtime OK', result:'<b>Use pgLoader.</b> A single-pass dump-and-load with pgLoader\'s built-in type casting is simplest and fast enough for this size — typically minutes to a few hours.'},
+    {label:'50GB–500GB, tight downtime window', result:'<b>Use AWS DMS (or equivalent) with CDC.</b> Bulk-load the base data ahead of time, then use change-data-capture to replay the delta during a short cutover window.'},
+    {label:'> 500GB or near-zero downtime required', result:'<b>Use a dual-write / phased migration.</b> Write to both databases from the application layer (or use Debezium-based CDC streaming) and cut over reads once Postgres has proven consistent for a full business cycle.'},
+    {label:'Team has strong SQL, wants full control', result:'<b>Build custom migration scripts.</b> More engineering time up front, but gives full control over transformation logic, validation, and idempotent re-runs — often preferred for complex schemas with many MySQL-specific constructs.'}
+  ]
+};
+
+const STACK = [
+  {role:'Schema & code conversion', name:'Claude (Opus/Sonnet)'},
+  {role:'In-IDE codegen & fixes', name:'Claude Code / Cursor'},
+  {role:'ETL / migration engine', name:'pgLoader'},
+  {role:'CDC / phased migration', name:'Debezium or AWS DMS'},
+  {role:'Data quality validation', name:'Great Expectations'},
+  {role:'Query/config tuning', name:'pganalyze + Claude'},
+  {role:'Load testing', name:'k6 (AI-scripted scenarios)'},
+  {role:'Backup / DR', name:'pgBackRest'}
+];
+
+const LEARN = [
+  {t:'PostgreSQL vs MySQL: A Comprehensive Comparison', type:'Guide'},
+  {t:'pgLoader official documentation', type:'Docs'},
+  {t:'PostgreSQL official docs — Migrating from other databases', type:'Docs'},
+  {t:'"The Art of PostgreSQL" — book', type:'Book'},
+  {t:'AWS Prescriptive Guidance: MySQL to Aurora PostgreSQL migration playbook', type:'Playbook'},
+  {t:'Postgres Weekly newsletter', type:'Newsletter'}
+];
+const COMM = [
+  {t:'r/PostgreSQL', type:'Reddit'},
+  {t:'r/Database', type:'Reddit'},
+  {t:'Postgres Slack (postgres-slack.herokuapp.com invite)', type:'Slack'},
+  {t:'DBA Stack Exchange', type:'Forum'},
+  {t:'PostgreSQL mailing lists (pgsql-general)', type:'Mailing list'},
+  {t:'Local PostgreSQL user group (PUG) meetups', type:'Meetup'}
+];
+
+const KEYWORDS = ['mysql to postgresql migration','pgloader tutorial','postgres AUTO_INCREMENT equivalent','mysql enum to postgres','postgresql GROUP BY strict mode','postgres JSONB vs mysql json','zero downtime database migration','postgres connection pooling pgbouncer','postgres EXPLAIN ANALYZE tuning','database cutover runbook template'];
+
+const EXTRA_PROMPTS = [
+  'Given this list of application-level MySQL feature dependencies, generate a risk register with likelihood, impact, and mitigation for each item, formatted as a table.',
+  'Write a rollback plan that can be executed in under 10 minutes if the PostgreSQL cutover fails smoke tests, including the exact commands to repoint the application back to MySQL.',
+  'Summarize this migration retrospective into a one-page lessons-learned doc suitable for sharing with engineering leadership, organized by what went well, what didn\'t, and what to change next time.'
+];
+
+const FUTURE = [
+  'Automate schema-drift detection between environments using a scheduled AI review of DDL diffs.',
+  'Build an AI-assisted runbook generator that produces a fresh cutover plan automatically whenever the schema inventory changes.',
+  'Set up continuous AI-reviewed slow-query digests so tuning becomes a standing weekly job instead of a one-time post-migration push.',
+  'Extend the dual-write/CDC pipeline into a reusable template for future database migrations beyond this one.'
+];
+
+/* ============================= RENDER ============================= */
+const stagesRoot = document.getElementById('stagesRoot');
+const stageNavInner = document.getElementById('stageNavInner');
+const diagramRow = document.getElementById('diagramRow');
+
+STAGES.forEach((s, i) => {
+  // nav
+  const navBtn = document.createElement('button');
+  navBtn.textContent = `${String(i+1).padStart(2,'0')} ${s.title.split(' & ')[0].split(' ')[0]}`;
+  navBtn.dataset.target = s.id;
+  navBtn.onclick = () => { document.getElementById(s.id).scrollIntoView({behavior:'smooth', block:'start'}); };
+  stageNavInner.appendChild(navBtn);
+
+  // diagram step
+  const dstep = document.createElement('div');
+  dstep.className = 'diagram-step';
+  dstep.innerHTML = `<div class="box"><b>${i+1}. ${s.title}</b>${s.time}</div>`;
+  dstep.onclick = () => document.getElementById(s.id).scrollIntoView({behavior:'smooth', block:'start'});
+  diagramRow.appendChild(dstep);
+
+  // section
+  const sec = document.createElement('div');
+  sec.className = 'wrap';
+  sec.innerHTML = `
+  <section id="${s.id}">
+    <div class="section-head"><span class="section-num">STAGE ${String(i+1).padStart(2,'0')}</span><h2>${s.title}</h2></div>
+    <div class="stage">
+      <div class="stage-top">
+        <div class="stage-title">
+          <div class="stage-index">${i+1}</div>
+          <h3>${s.title}</h3>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="stage-time">⏱ ${s.time}</span>
+          <button class="bookmark-btn" data-bookmark="${s.id}" title="Bookmark this stage">☆</button>
+          <label class="stage-check">
+            <input type="checkbox" data-stage="${s.id}"> Mark complete
+          </label>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="block">
+          <span class="blocklabel">Objectives</span>
+          <ul class="tidy">${s.objectives.map(o=>`<li>${o}</li>`).join('')}</ul>
+        </div>
+        <div class="block">
+          <span class="blocklabel">Tasks</span>
+          <ul class="tidy">${s.tasks.map(t=>`<li>${t}</li>`).join('')}</ul>
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="blocklabel">Best AI tools for this stage</span>
+        ${s.tools.map(t=>`
+          <div class="tool-card">
+            <div class="tool-name">${t.name} <span class="tag">${t.tag}</span></div>
+            <p>${t.why}</p>
+            <div class="alt">Alternatives: ${t.alt}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="block">
+        <span class="blocklabel">Prompt examples</span>
+        ${s.prompts.map((p,pi)=>`
+          <div class="promptbox" style="margin-bottom:10px;">${p}<button class="copy" data-copy="${s.id}-${pi}">Copy</button></div>
+        `).join('')}
+      </div>
+
+      <div class="grid-2">
+        <div class="block">
+          <span class="blocklabel">Best practices</span>
+          <ul class="tidy best">${s.best.map(b=>`<li>${b}</li>`).join('')}</ul>
+        </div>
+        <div class="block">
+          <span class="blocklabel">Common mistakes</span>
+          <ul class="tidy mistakes">${s.mistakes.map(m=>`<li>${m}</li>`).join('')}</ul>
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="blocklabel">Expected outputs</span>
+        ${s.outputs.map(o=>`<span class="output-badge">${o}</span> `).join('')}
+      </div>
+
+      <div class="block">
+        <span class="blocklabel">Efficiency tip</span>
+        <p style="color:var(--text-dim); font-size:13.5px;">${s.efficiency}</p>
+      </div>
+
+      <div class="block" style="margin-bottom:0;">
+        <span class="blocklabel">Your notes</span>
+        <textarea class="notes-area" data-notes="${s.id}" placeholder="Jot notes for this stage — saved locally in your browser..."></textarea>
+      </div>
+    </div>
+  </section>`;
+  stagesRoot.appendChild(sec);
+});
+
+// comparison table
+document.getElementById('cmpBody').innerHTML = CMP_ROWS.map(r=>`<tr><td>${r[0]}</td><td class="mysql-col">${r[1]}</td><td class="pg-col">${r[2]}</td></tr>`).join('');
+
+// decision tree
+const treeRoot = document.getElementById('treeRoot');
+treeRoot.innerHTML = `
+  <div class="tree-q">${TREE.q}</div>
+  <div class="tree-branches">
+    ${TREE.branches.map((b,i)=>`<div class="tree-answer" data-branch="${i}">${b.label}</div>`).join('')}
+  </div>
+  ${TREE.branches.map((b,i)=>`<div class="tree-result" id="tree-result-${i}">${b.result}</div>`).join('')}
+`;
+treeRoot.querySelectorAll('.tree-answer').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    treeRoot.querySelectorAll('.tree-result').forEach(r=>r.classList.remove('show'));
+    document.getElementById('tree-result-'+el.dataset.branch).classList.add('show');
+  });
+});
+
+// summary
+document.getElementById('summaryText').textContent =
+ "This workflow takes a production MySQL database through a complete relational-to-relational migration to PostgreSQL: inventory and plan, convert the schema and data model, build and rehearse the ETL tooling, migrate and validate the data, test and tune the application against the new engine, execute a controlled cutover, then monitor and optimize before decommissioning MySQL. AI tools are used throughout for schema translation, codebase scanning, script generation, and log/triage analysis — but the migration strategy, downtime tolerance, and rollback criteria remain deliberate engineering decisions made before any tool is invoked.";
+
+// stack
+document.getElementById('stackGrid').innerHTML = STACK.map(s=>`<div class="stack-item"><div class="role">${s.role}</div><div class="name">${s.name}</div></div>`).join('');
+
+// learn / communities
+document.getElementById('learnList').innerHTML = LEARN.map(l=>`<li>${l.t}<span class="type">${l.type}</span></li>`).join('');
+document.getElementById('commList').innerHTML = COMM.map(l=>`<li>${l.t}<span class="type">${l.type}</span></li>`).join('');
+
+// keywords
+document.getElementById('kwCloud').innerHTML = KEYWORDS.map(k=>`<span class="kw">${k}</span>`).join('');
+
+// extra prompts
+document.getElementById('extraPrompts').innerHTML = EXTRA_PROMPTS.map((p,i)=>`<div class="promptbox" style="margin-bottom:12px;">${p}<button class="copy" data-copy="extra-${i}">Copy</button></div>`).join('');
+
+// future
+document.getElementById('futureList').innerHTML = FUTURE.map(f=>`<li>${f}</li>`).join('');
+
+/* ============================= INTERACTIVITY ============================= */
+// copy buttons
+document.body.addEventListener('click', (e)=>{
+  if(e.target.matches('button.copy')){
+    const box = e.target.closest('.promptbox');
+    const text = box.textContent.replace('Copy','').trim();
+    navigator.clipboard?.writeText(text);
+    const orig = e.target.textContent;
+    e.target.textContent = 'Copied';
+    setTimeout(()=>e.target.textContent = orig, 1200);
+  }
+});
+
+// progress tracking + localStorage
+const STORE_KEY = 'aiwa-db-migration-v1';
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveState(state){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+let state = loadState();
+state.completed = state.completed || {};
+state.notes = state.notes || {};
+state.bookmarks = state.bookmarks || {};
+state.theme = state.theme || 'dark';
+
+function applyTheme(){
+  document.body.setAttribute('data-theme', state.theme);
+  document.getElementById('themeBtn').textContent = state.theme === 'dark' ? 'Light mode' : 'Dark mode';
+}
+document.getElementById('themeBtn').onclick = ()=>{
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(); saveState(state);
+};
+applyTheme();
+
+document.getElementById('printBtn').onclick = ()=> window.print();
+
+function updateProgress(){
+  const total = STAGES.length;
+  const done = STAGES.filter(s=>state.completed[s.id]).length;
+  document.getElementById('progFill').style.width = (done/total*100)+'%';
+  document.getElementById('progText').textContent = `${done}/${total}`;
+}
+
+document.querySelectorAll('input[data-stage]').forEach(cb=>{
+  const id = cb.dataset.stage;
+  cb.checked = !!state.completed[id];
+  cb.addEventListener('change', ()=>{
+    state.completed[id] = cb.checked;
+    saveState(state); updateProgress();
+  });
+});
+updateProgress();
+
+document.querySelectorAll('textarea[data-notes]').forEach(ta=>{
+  const id = ta.dataset.notes;
+  ta.value = state.notes[id] || '';
+  ta.addEventListener('input', ()=>{
+    state.notes[id] = ta.value;
+    saveState(state);
+  });
+});
+
+document.querySelectorAll('button[data-bookmark]').forEach(btn=>{
+  const id = btn.dataset.bookmark;
+  if(state.bookmarks[id]){ btn.classList.add('active'); btn.textContent = '★'; }
+  btn.addEventListener('click', ()=>{
+    state.bookmarks[id] = !state.bookmarks[id];
+    btn.classList.toggle('active', state.bookmarks[id]);
+    btn.textContent = state.bookmarks[id] ? '★' : '☆';
+    saveState(state);
+  });
+});
+
+// active nav highlight on scroll
+const navButtons = Array.from(stageNavInner.querySelectorAll('button'));
+const sections = STAGES.map(s=>document.getElementById(s.id));
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const id = entry.target.id;
+      navButtons.forEach(b=>b.classList.toggle('active', b.dataset.target===id));
+    }
+  });
+}, {rootMargin:'-20% 0px -70% 0px'});
+sections.forEach(sec=>sec && io.observe(sec));
+</script>
+</body>
+</html>
