@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomous Agent Studio — Investment Research Desk</title>
+<style>
+:root{
+  --ink:#0d1210;
+  --ink-2:#131a17;
+  --panel:#161f1c;
+  --panel-2:#1b2521;
+  --line:#2a3733;
+  --line-soft:#212b27;
+  --paper:#eee8da;
+  --paper-dim:#b9b3a3;
+  --gold:#c9a24b;
+  --gold-bright:#e0bb62;
+  --sage:#7fa88a;
+  --rust:#b8664a;
+  --blue:#6f96a8;
+  --text:#e9e4d8;
+  --text-dim:#a6a294;
+  --mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --radius: 3px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(201,162,75,0.06), transparent),
+    var(--ink);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold); color:#1a1408;}
+a{color:var(--gold-bright);}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
+
+/* ---------- Layout shell ---------- */
+.shell{max-width:1320px; margin:0 auto; padding:0 24px 80px;}
+
+header.masthead{
+  border-bottom:1px solid var(--line);
+  padding:28px 0 20px;
+  display:flex; justify-content:space-between; align-items:flex-end; gap:20px;
+  flex-wrap:wrap;
+}
+.masthead-left .kicker{
+  font-family:var(--mono); font-size:11px; letter-spacing:0.14em; color:var(--gold);
+  margin:0 0 6px;
+}
+.masthead-left h1{
+  font-family:var(--serif); font-weight:400; font-size:32px; margin:0; color:var(--paper);
+  letter-spacing:0.2px;
+}
+.masthead-left .sub{color:var(--text-dim); font-size:13.5px; margin-top:6px; max-width:560px;}
+.masthead-right{text-align:right; font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+.masthead-right .date{color:var(--paper-dim);}
+
+/* ---------- Setup card ---------- */
+.setup{
+  margin-top:28px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:28px;
+}
+.setup h2{font-family:var(--serif); font-weight:400; font-size:20px; margin:0 0 4px; color:var(--paper);}
+.setup p.hint{color:var(--text-dim); font-size:13px; margin:0 0 20px;}
+.field{margin-bottom:16px;}
+.field label{display:block; font-size:12px; letter-spacing:0.03em; color:var(--text-dim); margin-bottom:6px;}
+textarea, input[type=text]{
+  width:100%; background:var(--ink-2); border:1px solid var(--line); color:var(--text);
+  border-radius:var(--radius); padding:11px 13px; font-family:var(--sans); font-size:14px;
+  resize:vertical; transition:border-color .15s ease;
+}
+textarea:focus, input:focus{outline:none; border-color:var(--gold);}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media (max-width:720px){.grid-2{grid-template-columns:1fr;}}
+
+.btn{
+  font-family:var(--sans); font-size:13.5px; font-weight:600; letter-spacing:0.01em;
+  border-radius:var(--radius); padding:12px 22px; border:1px solid transparent; cursor:pointer;
+  transition:transform .08s ease, background .15s ease, border-color .15s ease;
+}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--gold); color:#1a1408;}
+.btn-primary:hover{background:var(--gold-bright);}
+.btn-primary:disabled{background:#5c5333; color:#8a836a; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--text); border-color:var(--line);}
+.btn-ghost:hover{border-color:var(--gold);}
+.setup-actions{display:flex; gap:12px; align-items:center; margin-top:6px;}
+.err-msg{color:var(--rust); font-size:12.5px; margin-top:10px; display:none;}
+
+/* ---------- Dashboard ---------- */
+#dashboard{display:none; margin-top:32px;}
+.brief-strip{
+  font-family:var(--mono); font-size:12px; color:var(--text-dim);
+  border:1px solid var(--line-soft); border-radius:var(--radius); padding:10px 14px; margin-bottom:24px;
+  background:var(--ink-2);
+}
+.brief-strip b{color:var(--paper);}
+
+/* Workflow cycle diagram */
+.cycle-wrap{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:24px; margin-bottom:24px;
+}
+.cycle-wrap h3{margin:0 0 4px; font-family:var(--serif); font-weight:400; font-size:17px; color:var(--paper);}
+.cycle-wrap p{margin:0 0 18px; font-size:12.5px; color:var(--text-dim);}
+svg#cycleSvg{width:100%; height:auto; display:block;}
+.node-box{fill:var(--ink-2); stroke:var(--line); stroke-width:1; transition:stroke .2s ease, fill .2s ease;}
+.node-box.active{stroke:var(--gold); fill:#2a230f;}
+.node-box.done{stroke:var(--sage);}
+.node-label{font-family:var(--sans); font-size:12px; fill:var(--text); font-weight:600;}
+.node-sub{font-family:var(--mono); font-size:9.5px; fill:var(--text-dim);}
+.flow-line{fill:none; stroke:var(--line); stroke-width:1.5;}
+.flow-line.return{stroke:var(--blue); stroke-dasharray:4 3;}
+.flow-line.branch{stroke:var(--gold); stroke-dasharray:2 2;}
+.flow-arrow{fill:var(--line);}
+
+/* Status row */
+.status-row{
+  display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:16px; margin-bottom:24px;
+}
+@media (max-width:900px){.status-row{grid-template-columns:1fr 1fr;}}
+.stat-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px;
+}
+.stat-card .label{font-family:var(--mono); font-size:10.5px; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:8px;}
+.stat-card .value{font-family:var(--serif); font-size:22px; color:var(--paper);}
+.stat-card .value.gold{color:var(--gold-bright);}
+.pulse-dot{
+  display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--sage); margin-right:7px;
+  animation:pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.35;}}
+.pulse-dot.idle{background:var(--text-dim); animation:none;}
+.pulse-dot.err{background:var(--rust);}
+
+/* Two-column body */
+.body-grid{display:grid; grid-template-columns:2fr 1fr; gap:20px;}
+@media (max-width:980px){.body-grid{grid-template-columns:1fr;}}
+
+.panel{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:20px 22px; margin-bottom:20px;
+}
+.panel h3{margin:0 0 14px; font-family:var(--serif); font-weight:400; font-size:16px; color:var(--paper); display:flex; align-items:center; justify-content:space-between;}
+.panel h3 .tag{font-family:var(--mono); font-size:10px; color:var(--text-dim); font-weight:400;}
+
+/* Round card */
+.round-card{
+  border:1px solid var(--line-soft); border-radius:var(--radius); padding:16px 18px; margin-bottom:14px;
+  background:var(--ink-2); animation:fadeIn .35s ease;
+}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+.round-card .rhead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; gap:6px;}
+.round-card .rhead .rtitle{font-family:var(--mono); font-size:12px; color:var(--gold); letter-spacing:0.03em;}
+.round-card .rhead .rscore{font-family:var(--serif); font-size:19px; color:var(--paper);}
+.round-card .rhead .rdelta{font-family:var(--mono); font-size:11.5px;}
+.rdelta.up{color:var(--sage);}
+.rdelta.flat{color:var(--text-dim);}
+.subblock{margin-top:10px;}
+.subblock .stitle{font-family:var(--mono); font-size:10px; letter-spacing:0.07em; color:var(--text-dim); margin-bottom:5px;}
+.subblock .scontent{font-size:13px; color:var(--text); white-space:pre-wrap; line-height:1.55;}
+details.draft-toggle{margin-top:10px;}
+details.draft-toggle summary{cursor:pointer; font-family:var(--mono); font-size:10.5px; color:var(--blue); letter-spacing:0.05em; user-select:none;}
+details.draft-toggle .draft-body{
+  margin-top:8px; font-size:13px; color:var(--text-dim); white-space:pre-wrap; line-height:1.6;
+  max-height:400px; overflow-y:auto; border-left:2px solid var(--line-soft); padding-left:12px;
+}
+
+/* Activity log */
+#activityLog{
+  font-family:var(--mono); font-size:11.5px; color:var(--text-dim); max-height:340px; overflow-y:auto;
+  display:flex; flex-direction:column-reverse;
+}
+.log-line{padding:5px 0; border-bottom:1px solid var(--line-soft); display:flex; gap:10px;}
+.log-line .t{color:#6b6659; flex-shrink:0;}
+.log-line .a{color:var(--gold); flex-shrink:0; min-width:90px;}
+.log-line.error .a{color:var(--rust);}
+
+/* Memory */
+.mem-item{
+  font-size:12.5px; color:var(--text-dim); border-left:2px solid var(--sage); padding:6px 10px; margin-bottom:8px;
+  background:var(--ink-2);
+}
+
+/* Score bar chart */
+.chart-wrap{margin-top:6px;}
+.chart-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+.chart-row .rn{font-family:var(--mono); font-size:10.5px; color:var(--text-dim); width:44px; flex-shrink:0;}
+.chart-bar-bg{flex:1; height:14px; background:var(--ink-2); border-radius:2px; overflow:hidden; border:1px solid var(--line-soft);}
+.chart-bar{height:100%; background:linear-gradient(90deg, var(--sage), var(--gold)); transition:width .5s ease;}
+.chart-row .sv{font-family:var(--mono); font-size:11px; color:var(--paper); width:34px; text-align:right; flex-shrink:0;}
+
+/* final summary */
+#finalPanel{display:none;}
+#finalPanel .stop-banner{
+  border:1px solid var(--gold); background:#241d0f; border-radius:var(--radius); padding:16px 18px; margin-bottom:18px;
+}
+#finalPanel .stop-banner .st{font-family:var(--mono); font-size:11px; color:var(--gold); letter-spacing:0.06em; margin-bottom:4px;}
+#finalPanel .stop-banner .sd{font-size:14px; color:var(--paper);}
+.final-output{
+  background:var(--ink-2); border:1px solid var(--line-soft); border-radius:var(--radius); padding:20px;
+  font-size:14px; line-height:1.7; white-space:pre-wrap; color:var(--text); max-height:600px; overflow-y:auto;
+}
+.perf-table{width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;}
+.perf-table th, .perf-table td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line-soft);}
+.perf-table th{font-family:var(--mono); font-size:10.5px; color:var(--text-dim); letter-spacing:0.05em; font-weight:400;}
+.perf-table td{color:var(--text);}
+.exec-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:14px;}
+@media (max-width:700px){.exec-stats{grid-template-columns:1fr 1fr;}}
+.exec-stats .es{background:var(--ink-2); border:1px solid var(--line-soft); border-radius:var(--radius); padding:12px 14px;}
+.exec-stats .es .l{font-family:var(--mono); font-size:9.5px; color:var(--text-dim); margin-bottom:4px;}
+.exec-stats .es .v{font-family:var(--serif); font-size:18px; color:var(--gold-bright);}
+
+.arch-list, .ext-list{margin:0; padding-left:20px; color:var(--text-dim); font-size:13px; line-height:1.8;}
+.arch-list b, .ext-list b{color:var(--paper);}
+.prompt-chip{
+  display:inline-block; background:var(--ink-2); border:1px solid var(--line-soft); border-radius:var(--radius);
+  padding:8px 12px; font-family:var(--mono); font-size:11.5px; color:var(--text-dim); margin:4px 6px 4px 0; cursor:pointer;
+}
+.prompt-chip:hover{border-color:var(--gold); color:var(--gold-bright);}
+
+.footer-note{text-align:center; color:var(--text-dim); font-size:11.5px; margin-top:50px; font-family:var(--mono);}
+
+.spinner{
+  width:13px; height:13px; border:2px solid var(--line); border-top-color:var(--gold);
+  border-radius:50%; display:inline-block; animation:spin .7s linear infinite; margin-right:8px; vertical-align:-2px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.retry-badge{
+  font-family:var(--mono); font-size:10.5px; color:var(--rust); background:#2a1712; border:1px solid #4a2a20;
+  border-radius:2px; padding:2px 7px; margin-left:8px;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <div class="masthead-left">
+      <p class="kicker">AUTONOMOUS AGENT STUDIO</p>
+      <h1>Investment Research Desk</h1>
+      <p class="sub">A self-improving multi-agent pipeline that plans, drafts, evaluates, critiques, and revises an investment research brief until it clears a rigor bar — live against the Claude API.</p>
+    </div>
+    <div class="masthead-right">
+      <div class="date" id="todayDate"></div>
+      <div>Target score: <b style="color:var(--gold)">90 / 100</b></div>
+      <div>Criteria: analytical rigor &amp; depth</div>
+    </div>
+  </header>
+
+  <!-- SETUP -->
+  <section class="setup" id="setupPanel">
+    <h2>Brief the desk</h2>
+    <p class="hint">Tell the analyst pipeline what to research. Be as specific as you like — ticker, sector, thesis question.</p>
+    <div class="field">
+      <label for="topicInput">Research subject</label>
+      <textarea id="topicInput" rows="3" placeholder="e.g. Evaluate whether NVIDIA (NVDA) remains an attractive long-term hold given AI-capex cyclicality and rising competition from custom silicon.">Evaluate whether the semiconductor equipment sector (ASML, Applied Materials, Lam Research) offers an attractive multi-year investment case given AI-driven capex cycles, China export restrictions, and customer concentration risk.</textarea>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="capInput">Hard iteration cap (safety fallback)</label>
+        <input type="text" id="capInput" value="8">
+      </div>
+      <div class="field">
+        <label for="deltaInput">Plateau delta (points, over 2 rounds)</label>
+        <input type="text" id="deltaInput" value="2">
+      </div>
+    </div>
+    <div class="setup-actions">
+      <button class="btn btn-primary" id="runBtn">Run the pipeline →</button>
+      <span style="font-family:var(--mono); font-size:11.5px; color:var(--text-dim);">No API key needed — calls run server-side</span>
+    </div>
+    <div class="err-msg" id="setupErr"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="brief-strip">Researching: <b id="briefEcho"></b></div>
+
+    <div class="cycle-wrap">
+      <h3>Pipeline topology</h3>
+      <p>Plan → Draft once, then loop Evaluate → Critique → Improve. The Improver's revised draft returns to the Evaluator each round; once a stop condition fires, flow branches to the Final Reviewer.</p>
+      <svg id="cycleSvg" viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="status-row">
+      <div class="stat-card">
+        <div class="label">ACTIVE AGENT</div>
+        <div class="value gold" id="activeAgentLabel"><span class="pulse-dot idle" id="pulseDot"></span>Idle</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">ROUND</div>
+        <div class="value" id="roundLabel">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">CURRENT SCORE</div>
+        <div class="value" id="scoreLabel">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">RETRIES</div>
+        <div class="value" id="retryLabel">0</div>
+      </div>
+    </div>
+
+    <div class="body-grid">
+      <div class="col-main">
+
+        <div class="panel">
+          <h3>Iteration history <span class="tag">score trend, live model output</span></h3>
+          <div id="historyWrap"></div>
+        </div>
+
+        <div class="panel" id="finalPanel">
+          <h3>Final brief <span class="tag">post Final-Reviewer polish</span></h3>
+          <div class="stop-banner">
+            <div class="st">STOP REASON</div>
+            <div class="sd" id="stopReasonText"></div>
+          </div>
+          <div class="final-output" id="finalOutput"></div>
+
+          <h3 style="margin-top:26px;">Agent performance summary</h3>
+          <table class="perf-table" id="perfTable"></table>
+
+          <h3 style="margin-top:26px;">Execution stats</h3>
+          <div class="exec-stats" id="execStats"></div>
+
+          <h3 style="margin-top:26px;">Architecture overview</h3>
+          <ul class="arch-list">
+            <li><b>Planner</b> — decomposes the research question into a section outline and rubric emphasis before any drafting begins.</li>
+            <li><b>Executor</b> — writes the first full draft brief from the plan.</li>
+            <li><b>Evaluator</b> — scores the current draft 0–100 against the rubric and returns structured reasoning, called fresh every round.</li>
+            <li><b>Critic</b> — reads the Evaluator's report and identifies the highest-leverage weaknesses, independent of the score itself.</li>
+            <li><b>Improver</b> — rewrites the full draft addressing the Critic's points, receiving prior score + critique as input.</li>
+            <li><b>Memory Manager</b> — after each round, records what changed and why, so recurring issues aren't reintroduced.</li>
+            <li><b>Safety Monitor</b> — screens each draft for unverifiable claims presented as fact or unlicensed financial-advice framing.</li>
+            <li><b>Final Reviewer</b> — polishes the winning draft into a publish-ready brief once a stop condition fires.</li>
+          </ul>
+
+          <h3 style="margin-top:26px;">Extension ideas</h3>
+          <ul class="ext-list">
+            <li>Add a <b>live web-search tool call</b> for the Executor/Improver so figures cite retrievable sources rather than model recall.</li>
+            <li>Run <b>two Critics in parallel</b> (bull case / bear case) and have the Improver reconcile both before revising.</li>
+            <li>Persist <b>Memory Manager</b> notes to a vector store so future briefs on related tickers inherit prior lessons.</li>
+            <li>Add a <b>human-in-the-loop approval gate</b> before Final Reviewer publishes, with inline edit-and-resubmit.</li>
+            <li>Swap the stop check for a <b>multi-metric threshold</b> (rigor AND balance AND clarity each ≥ target) instead of one score.</li>
+          </ul>
+
+          <h3 style="margin-top:26px;">Further prompts to extend this system</h3>
+          <div>
+            <span class="prompt-chip">"Add a bull/bear dual-critic branch and reconcile step"</span>
+            <span class="prompt-chip">"Wire in real web search for the Executor and Improver"</span>
+            <span class="prompt-chip">"Add a human approval gate before Final Reviewer runs"</span>
+            <span class="prompt-chip">"Generalize this studio to any workflow via a config JSON"</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="col-side">
+        <div class="panel">
+          <h3>Score trajectory</h3>
+          <div class="chart-wrap" id="chartWrap"><span style="font-size:12px;color:var(--text-dim)">No rounds yet.</span></div>
+        </div>
+
+        <div class="panel">
+          <h3>Memory updates</h3>
+          <div id="memoryWrap"><span style="font-size:12px;color:var(--text-dim)">Nothing recorded yet.</span></div>
+        </div>
+
+        <div class="panel">
+          <h3>Activity log</h3>
+          <div id="activityLog"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">AUTONOMOUS AGENT STUDIO — every score, critique and draft above is generated live by the Claude API. Nothing is scripted.</p>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+============================================================ */
+const CONFIG = {
+  model: "claude-sonnet-4-6",
+  targetScore: 90,
+  plateauDelta: 2,
+  plateauRounds: 2,
+  hardCap: 8,
+};
+
+const AGENTS = {
+  planner: { name: "Planner", color: "gold" },
+  executor: { name: "Executor", color: "gold" },
+  evaluator: { name: "Evaluator", color: "blue" },
+  critic: { name: "Critic", color: "rust" },
+  improver: { name: "Improver", color: "sage" },
+  memory: { name: "Memory Manager", color: "sage" },
+  safety: { name: "Safety Monitor", color: "rust" },
+  reviewer: { name: "Final Reviewer", color: "gold" },
+};
+
+const SYSTEM_PROMPTS = {
+  planner: `You are the Planner agent on an investment research desk. Given a research subject, produce a tight outline for an investment research brief: 4-6 section headers covering thesis, catalysts/risks, financial/competitive analysis, and a clear recommendation framing. Also state which 2-3 rubric dimensions (of: analytical rigor, factual grounding, balance of risk/opportunity, clarity) deserve the most weight for this particular subject. Be concise — output the outline and weighting notes only, no preamble, no drafting of the actual brief.`,
+
+  executor: `You are the Executor agent on an investment research desk. Given a research subject and an outline from the Planner, write a complete, substantive investment research brief (600-900 words). Prioritize analytical rigor and depth of reasoning: show your work, quantify where reasonable, consider second-order effects, and avoid vague hedging. Follow the outline's structure. Do not include a meta-commentary, only the brief itself. This is a draft for internal review, not published advice — you may state assumptions explicitly rather than caveat every sentence.`,
+
+  evaluator: `You are the Evaluator agent on an investment research desk. You will be given a draft investment research brief and asked to score it 0-100 primarily on ANALYTICAL RIGOR AND DEPTH OF REASONING (does it reason through mechanisms, quantify tradeoffs, consider counterarguments, avoid surface-level claims?), with secondary weight on factual plausibility, balance, and clarity.
+
+Respond in EXACTLY this format, nothing else:
+SCORE: <integer 0-100>
+REASONING: <3-5 sentences of specific, substantive reasoning about what is and isn't rigorous in this draft. Reference specific passages or omissions. Be a tough, discerning grader — scores above 85 should be rare and earned.>`,
+
+  critic: `You are the Critic agent on an investment research desk. You will be given a draft brief and the Evaluator's score + reasoning. Your job is different from the Evaluator's: identify the 3-4 HIGHEST-LEVERAGE, MOST ACTIONABLE weaknesses in the draft — the specific things a rewrite should fix to gain the most rigor points. Be concrete and directive, not general ("add a numerical sensitivity range for the China-restriction downside case" not "improve depth"). 
+
+Respond in EXACTLY this format, nothing else:
+CRITIQUE:
+1. <specific actionable point>
+2. <specific actionable point>
+3. <specific actionable point>
+(up to 4 points)`,
+
+  improver: `You are the Improver agent on an investment research desk. You will be given the current draft brief, the Evaluator's score/reasoning, and the Critic's specific action points, plus any relevant memory notes from prior rounds. Rewrite the FULL brief (not a diff, not a patch — the complete revised text) addressing every critique point directly while preserving what already worked. Aim for a meaningful, substantive jump in analytical rigor, not cosmetic wording changes. Output ONLY the revised brief text, no preamble or meta-commentary.`,
+
+  memory: `You are the Memory Manager agent on an investment research desk. Given this round's score, critique, and what the Improver changed, write ONE short note (1-2 sentences) capturing a lesson or pattern worth remembering for future rounds — e.g. a recurring gap, or a technique that worked well. Output only the note, no preamble.`,
+
+  safety: `You are the Safety Monitor agent on an investment research desk. Given a draft brief, check for: (a) claims stated as hard fact that should be flagged as estimates/assumptions, (b) framing that reads as personalized financial advice rather than analysis. Respond in EXACTLY this format:
+STATUS: <CLEAR or FLAGGED>
+NOTE: <one sentence; if CLEAR, briefly say why it's fine>`,
+
+  reviewer: `You are the Final Reviewer agent on an investment research desk. You will be given the winning draft brief after iterative improvement. Do a final polish pass: tighten prose, ensure consistent structure, add a one-line disclaimer that this is analysis, not personalized financial advice, and ensure it reads as a publish-ready brief. Do not change the substance or add new claims. Output ONLY the final polished brief text.`,
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let state = {
+  topic: "",
+  outline: "",
+  rounds: [], // {round, score, reasoning, critique, draft, delta, memoryNote, safety}
+  retries: 0,
+  finalDraft: "",
+  stopReason: "",
+  startTime: 0,
+  agentCallCounts: {},
+  agentTimings: {},
+};
+
+/* ============================================================
+   API CALL WITH RETRY
+============================================================ */
+async function callClaude(system, userContent, agentKey, maxRetries=3){
+  let attempt = 0;
+  const t0 = performance.now();
+  while(attempt <= maxRetries){
+    try{
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model: CONFIG.model,
+          max_tokens: 1800,
+          system: system,
+          messages: [{role:"user", content: userContent}]
+        })
+      });
+      if(!res.ok){
+        throw new Error("HTTP " + res.status);
+      }
+      const data = await res.json();
+      const text = (data.content || []).map(b => b.text || "").join("\n").trim();
+      if(!text) throw new Error("Empty response");
+
+      const dt = performance.now() - t0;
+      state.agentCallCounts[agentKey] = (state.agentCallCounts[agentKey]||0) + 1;
+      state.agentTimings[agentKey] = (state.agentTimings[agentKey]||0) + dt;
+      return text;
+    }catch(err){
+      attempt++;
+      state.retries++;
+      updateRetryLabel();
+      log(agentKey, `Call failed (${err.message}) — retry ${attempt}/${maxRetries}`, true);
+      if(attempt > maxRetries){
+        throw err;
+      }
+      await sleep(500 * attempt);
+    }
+  }
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+/* ============================================================
+   UI HELPERS
+============================================================ */
+function log(agentKey, msg, isError=false){
+  const wrap = document.getElementById("activityLog");
+  const line = document.createElement("div");
+  line.className = "log-line" + (isError ? " error" : "");
+  const time = new Date().toLocaleTimeString();
+  const agentName = AGENTS[agentKey] ? AGENTS[agentKey].name : agentKey;
+  line.innerHTML = `<span class="t">${time}</span><span class="a">${escapeHtml(agentName)}</span><span>${escapeHtml(msg)}</span>`;
+  wrap.appendChild(line);
+}
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+function setActiveAgent(agentKey, statusText){
+  const label = document.getElementById("activeAgentLabel");
+  const dot = document.getElementById("pulseDot");
+  if(agentKey === null){
+    label.innerHTML = `<span class="pulse-dot idle" id="pulseDot"></span>Idle`;
+  } else {
+    label.innerHTML = `<span class="pulse-dot" id="pulseDot"></span>${AGENTS[agentKey].name}`;
+  }
+  updateCycleDiagram(agentKey);
+}
+function updateRetryLabel(){
+  document.getElementById("retryLabel").textContent = state.retries;
+}
+function updateRoundLabel(n, checking){
+  document.getElementById("roundLabel").textContent = checking ? `${n} — checking…` : `${n}`;
+}
+function updateScoreLabel(score){
+  document.getElementById("scoreLabel").textContent = (score===null||score===undefined) ? "—" : score + " / 100";
+}
+
+/* ============================================================
+   CYCLE DIAGRAM (SVG)
+============================================================ */
+const NODE_POS = {
+  planner:  {x:60,  y:150, w:120, h:56, label:"Planner", sub:"outline + rubric"},
+  executor: {x:230, y:150, w:120, h:56, label:"Executor", sub:"first draft"},
+  evaluator:{x:430, y:60,  w:120, h:56, label:"Evaluator", sub:"score + reasoning"},
+  critic:   {x:620, y:150, w:120, h:56, label:"Critic", sub:"action points"},
+  improver: {x:430, y:240, w:120, h:56, label:"Improver", sub:"revised draft"},
+  reviewer: {x:820, y:150, w:120, h:56, label:"Final Reviewer", sub:"publish polish"},
+};
+function buildCycleSvg(){
+  const svg = document.getElementById("cycleSvg");
+  let s = "";
+  // static connecting lines
+  s += arrow(180,178, 230,178); // planner->executor
+  s += arrow(350,165, 430,100, true); // executor -> evaluator (curve up)
+  s += arrowCurve(490,60, 560,88, 620,150); // evaluator -> critic
+  s += arrowCurve(620,190, 560,230, 490,240); // critic -> improver
+  s += arrowCurveReturn(430,268, 350,300, 300,206); // improver -> evaluator return (loop)
+  s += `<path class="flow-line branch" d="M680,120 C 740,70 780,90 820,150" marker-end="url(#arrowGold)"></path>`; // critic/evaluator area -> reviewer branch (drawn from evaluator zone)
+  s += defs();
+  for(const key in NODE_POS){
+    s += nodeSvg(key);
+  }
+  svg.innerHTML = s;
+}
+function defs(){
+  return `<defs>
+    <marker id="arrowGray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#3a4a44"/></marker>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#6f96a8"/></marker>
+    <marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#c9a24b"/></marker>
+  </defs>`;
+}
+function arrow(x1,y1,x2,y2){
+  return `<line class="flow-line" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#arrowGray)"></line>`;
+}
+function arrowCurve(x1,y1,cx,cy,x2,y2){
+  return `<path class="flow-line" d="M${x1},${y1} Q${cx},${cy} ${x2},${y2}" marker-end="url(#arrowGray)"></path>`;
+}
+function arrowCurveReturn(x1,y1,cx,cy,x2,y2){
+  return `<path class="flow-line return" d="M${x1},${y1} C ${cx},${cy} ${cx},${y2} ${x2},${y2}" marker-end="url(#arrowBlue)"></path>`;
+}
+function nodeSvg(key){
+  const n = NODE_POS[key];
+  return `<g id="node-${key}">
+    <rect class="node-box" data-key="${key}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4"></rect>
+    <text class="node-label" x="${n.x + n.w/2}" y="${n.y + 24}" text-anchor="middle">${n.label}</text>
+    <text class="node-sub" x="${n.x + n.w/2}" y="${n.y + 40}" text-anchor="middle">${n.sub}</text>
+  </g>`;
+}
+function updateCycleDiagram(activeKey){
+  document.querySelectorAll(".node-box").forEach(el=>{
+    el.classList.remove("active");
+  });
+  if(activeKey && NODE_POS[activeKey]){
+    const el = document.querySelector(`.node-box[data-key="${activeKey}"]`);
+    if(el) el.classList.add("active");
+  }
+}
+function markNodeDone(key){
+  const el = document.querySelector(`.node-box[data-key="${key}"]`);
+  if(el) el.classList.add("done");
+}
+
+/* ============================================================
+   HISTORY / CHART / MEMORY RENDER
+============================================================ */
+function renderRoundCard(r){
+  const wrap = document.getElementById("historyWrap");
+  const card = document.createElement("div");
+  card.className = "round-card";
+  const deltaClass = r.delta > 0 ? "up" : "flat";
+  const deltaStr = r.round === 1 ? "first draft" : (r.delta>=0? `+${r.delta}`: `${r.delta}`);
+  card.innerHTML = `
+    <div class="rhead">
+      <span class="rtitle">ROUND ${r.round}</span>
+      <span class="rscore">${r.score} / 100</span>
+      <span class="rdelta ${deltaClass}">${deltaStr}</span>
+    </div>
+    <div class="subblock">
+      <div class="stitle">EVALUATOR REASONING</div>
+      <div class="scontent">${escapeHtml(r.reasoning)}</div>
+    </div>
+    <div class="subblock">
+      <div class="stitle">CRITIC — ACTION POINTS</div>
+      <div class="scontent">${escapeHtml(r.critique || "(final round — no further critique)")}</div>
+    </div>
+    <div class="subblock">
+      <div class="stitle">SAFETY MONITOR</div>
+      <div class="scontent">${escapeHtml(r.safety || "")}</div>
+    </div>
+    <details class="draft-toggle">
+      <summary>▸ view draft text for this round</summary>
+      <div class="draft-body">${escapeHtml(r.draft)}</div>
+    </details>
+  `;
+  wrap.prepend(card);
+}
+function renderChart(){
+  const wrap = document.getElementById("chartWrap");
+  if(state.rounds.length === 0){
+    wrap.innerHTML = `<span style="font-size:12px;color:var(--text-dim)">No rounds yet.</span>`;
+    return;
+  }
+  let html = "";
+  for(const r of state.rounds){
+    const pct = Math.max(2, r.score);
+    html += `<div class="chart-row">
+      <div class="rn">R${r.round}</div>
+      <div class="chart-bar-bg"><div class="chart-bar" style="width:${pct}%"></div></div>
+      <div class="sv">${r.score}</div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+function renderMemory(note){
+  const wrap = document.getElementById("memoryWrap");
+  if(wrap.querySelector("span")) wrap.innerHTML = "";
+  const el = document.createElement("div");
+  el.className = "mem-item";
+  el.textContent = note;
+  wrap.appendChild(el);
+}
+
+/* ============================================================
+   PARSE HELPERS
+============================================================ */
+function parseEvaluator(text){
+  const scoreMatch = text.match(/SCORE:\s*(\d+)/i);
+  const reasonMatch = text.match(/REASONING:\s*([\s\S]*)/i);
+  const score = scoreMatch ? Math.max(0, Math.min(100, parseInt(scoreMatch[1],10))) : 50;
+  const reasoning = reasonMatch ? reasonMatch[1].trim() : text.trim();
+  return {score, reasoning};
+}
+function parseCritic(text){
+  const m = text.match(/CRITIQUE:\s*([\s\S]*)/i);
+  return m ? m[1].trim() : text.trim();
+}
+function parseSafety(text){
+  return text.trim();
+}
+
+/* ============================================================
+   MAIN ORCHESTRATION LOOP
+============================================================ */
+async function runPipeline(topic){
+  state = { topic, outline:"", rounds:[], retries:0, finalDraft:"", stopReason:"",
+            startTime: performance.now(), agentCallCounts:{}, agentTimings:{} };
+  updateRetryLabel();
+  document.getElementById("historyWrap").innerHTML = "";
+  document.getElementById("activityLog").innerHTML = "";
+  document.getElementById("memoryWrap").innerHTML = `<span style="font-size:12px;color:var(--text-dim)">Nothing recorded yet.</span>`;
+  document.getElementById("finalPanel").style.display = "none";
+  document.getElementById("briefEcho").textContent = topic;
+
+  try{
+    // --- PLANNER ---
+    setActiveAgent("planner");
+    log("planner", "Decomposing research question into outline + rubric weighting…");
+    const outline = await callClaude(SYSTEM_PROMPTS.planner, `Research subject: ${topic}`, "planner");
+    state.outline = outline;
+    log("planner", "Outline ready.");
+    markNodeDone("planner");
+
+    // --- EXECUTOR (first draft) ---
+    setActiveAgent("executor");
+    log("executor", "Writing first full draft from outline…");
+    let draft = await callClaude(SYSTEM_PROMPTS.executor,
+      `Research subject: ${topic}\n\nOutline from Planner:\n${outline}`, "executor");
+    log("executor", "First draft complete.");
+    markNodeDone("executor");
+
+    // --- LOOP: Evaluator -> Critic -> Improver ---
+    let round = 0;
+    let prevScore = null;
+    let plateauStreak = 0;
+    let stopFired = false;
+
+    while(true){
+      round++;
+      updateRoundLabel(round, false);
+
+      // EVALUATOR
+      setActiveAgent("evaluator");
+      log("evaluator", `Scoring round ${round} draft…`);
+      const rubricNote = round === 1 ? "" : `\n\nMemory notes from prior rounds:\n${memoryNotesText()}`;
+      const evalRaw = await callClaude(SYSTEM_PROMPTS.evaluator,
+        `Research subject: ${topic}\n\nDraft to evaluate:\n${draft}${rubricNote}`, "evaluator");
+      const { score, reasoning } = parseEvaluator(evalRaw);
+      updateScoreLabel(score);
+      log("evaluator", `Score: ${score}/100.`);
+      markNodeDone("evaluator");
+
+      // SAFETY MONITOR
+      setActiveAgent("safety");
+      log("safety", "Screening draft for unverified-fact framing…");
+      const safetyRaw = await callClaude(SYSTEM_PROMPTS.safety,
+        `Draft to screen:\n${draft}`, "safety");
+      log("safety", safetyRaw.split("\n")[0]);
+
+      const delta = prevScore === null ? 0 : (score - prevScore);
+
+      // STOP CHECK (before critique — decide if we even need another critique/improve pass)
+      let thresholdHit = score >= CONFIG.targetScore;
+      let plateauHit = false;
+      if(prevScore !== null){
+        if(delta < CONFIG.plateauDelta) plateauStreak++;
+        else plateauStreak = 0;
+        if(plateauStreak >= CONFIG.plateauRounds) plateauHit = true;
+      }
+      let capHit = round >= CONFIG.hardCap;
+
+      let critiqueText = "";
+      let memNote = "";
+
+      if(thresholdHit || plateauHit || capHit){
+        stopFired = true;
+        if(thresholdHit) state.stopReason = `Threshold reached — score ${score} crossed the target of ${CONFIG.targetScore}/100 in round ${round}.`;
+        else if(plateauHit) state.stopReason = `Plateau detected — improvement stayed under +${CONFIG.plateauDelta} points for ${CONFIG.plateauRounds} consecutive rounds (round ${round}, score ${score}).`;
+        else state.stopReason = `Hard iteration cap reached (${CONFIG.hardCap} rounds) — safety fallback triggered, not the intended ending.`;
+        log("evaluator", `Stop condition fired: ${thresholdHit? "THRESHOLD" : plateauHit? "PLATEAU" : "HARD CAP"}.`);
+
+        state.rounds.push({round, score, reasoning, critique:"", draft, delta, safety:safetyRaw});
+        renderRoundCard(state.rounds[state.rounds.length-1]);
+        renderChart();
+        state.finalDraft = draft;
+        prevScore = score;
+        break;
+      }
+
+      // CRITIC
+      setActiveAgent("critic");
+      log("critic", "Identifying highest-leverage weaknesses…");
+      const criticRaw = await callClaude(SYSTEM_PROMPTS.critic,
+        `Research subject: ${topic}\n\nDraft:\n${draft}\n\nEvaluator score: ${score}/100\nEvaluator reasoning: ${reasoning}`, "critic");
+      critiqueText = parseCritic(criticRaw);
+      log("critic", "Critique ready.");
+      markNodeDone("critic");
+
+      state.rounds.push({round, score, reasoning, critique: critiqueText, draft, delta, safety: safetyRaw});
+      renderRoundCard(state.rounds[state.rounds.length-1]);
+      renderChart();
+
+      // IMPROVER
+      setActiveAgent("improver");
+      log("improver", "Rewriting full draft to address critique…");
+      const improverInput = `Research subject: ${topic}
+
+Current draft:
+${draft}
+
+Evaluator score: ${score}/100
+Evaluator reasoning: ${reasoning}
+
+Critic's action points:
+${critiqueText}
+${memoryNotesText() ? "\nMemory notes from prior rounds:\n" + memoryNotesText() : ""}`;
+      draft = await callClaude(SYSTEM_PROMPTS.improver, improverInput, "improver");
+      log("improver", "Revised draft complete.");
+      markNodeDone("improver");
+
+      // MEMORY MANAGER
+      setActiveAgent("memory");
+      log("memory", "Recording lesson from this round…");
+      memNote = await callClaude(SYSTEM_PROMPTS.memory,
+        `Round ${round} score: ${score}. Critique given: ${critiqueText}. This is being used to inform the next revision.`, "memory");
+      renderMemory(`Round ${round}: ${memNote}`);
+      log("memory", "Note stored.");
+
+      state.rounds[state.rounds.length-1].memoryNote = memNote;
+
+      prevScore = score;
+      updateRoundLabel(round + 1, true);
+    }
+
+    // --- FINAL REVIEWER ---
+    setActiveAgent("reviewer");
+    updateRoundLabel(round, true);
+    log("reviewer", "Polishing winning draft for publication…");
+    const finalPolished = await callClaude(SYSTEM_PROMPTS.reviewer,
+      `Research subject: ${topic}\n\nWinning draft (stop reason: ${state.stopReason}):\n${state.finalDraft}`, "reviewer");
+    state.finalDraft = finalPolished;
+    log("reviewer", "Final brief ready.");
+    markNodeDone("reviewer");
+
+    setActiveAgent(null);
+    updateRoundLabel(round, false);
+    renderFinal();
+
+  }catch(err){
+    log("evaluator", "Pipeline halted: " + err.message, true);
+    setActiveAgent(null);
+    const dot = document.getElementById("pulseDot");
+    if(dot) dot.classList.add("err");
+    alert("The pipeline hit an unrecoverable error after retries: " + err.message + "\n\nCheck the activity log for details.");
+  }
+}
+
+function memoryNotesText(){
+  return state.rounds
+    .filter(r => r.memoryNote)
+    .map(r => `- (Round ${r.round}) ${r.memoryNote}`)
+    .join("\n");
+}
+
+/* ============================================================
+   FINAL RENDER
+============================================================ */
+function renderFinal(){
+  const panel = document.getElementById("finalPanel");
+  panel.style.display = "block";
+  document.getElementById("stopReasonText").textContent = state.stopReason;
+  document.getElementById("finalOutput").textContent = state.finalDraft;
+
+  // performance table
+  const perfRows = Object.keys(state.agentCallCounts).map(key=>{
+    const calls = state.agentCallCounts[key];
+    const avgMs = state.agentTimings[key] / calls;
+    return `<tr><td>${AGENTS[key].name}</td><td>${calls}</td><td>${(avgMs/1000).toFixed(2)}s</td></tr>`;
+  }).join("");
+  document.getElementById("perfTable").innerHTML =
+    `<tr><th>Agent</th><th>Calls made</th><th>Avg latency</th></tr>${perfRows}`;
+
+  // exec stats
+  const totalTime = ((performance.now() - state.startTime)/1000).toFixed(1);
+  const totalCalls = Object.values(state.agentCallCounts).reduce((a,b)=>a+b,0);
+  const firstScore = state.rounds[0] ? state.rounds[0].score : 0;
+  const lastScore = state.rounds[state.rounds.length-1] ? state.rounds[state.rounds.length-1].score : 0;
+  document.getElementById("execStats").innerHTML = `
+    <div class="es"><div class="l">TOTAL ROUNDS</div><div class="v">${state.rounds.length}</div></div>
+    <div class="es"><div class="l">TOTAL API CALLS</div><div class="v">${totalCalls}</div></div>
+    <div class="es"><div class="l">WALL TIME</div><div class="v">${totalTime}s</div></div>
+    <div class="es"><div class="l">SCORE GAIN</div><div class="v">+${lastScore - firstScore}</div></div>
+  `;
+
+  panel.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+document.getElementById("todayDate").textContent = new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+buildCycleSvg();
+
+document.getElementById("runBtn").addEventListener("click", async ()=>{
+  const topic = document.getElementById("topicInput").value.trim();
+  const cap = parseInt(document.getElementById("capInput").value,10);
+  const delta = parseInt(document.getElementById("deltaInput").value,10);
+  const errBox = document.getElementById("setupErr");
+  errBox.style.display = "none";
+
+  if(!topic){
+    errBox.textContent = "Please describe a research subject first.";
+    errBox.style.display = "block";
+    return;
+  }
+  if(!isNaN(cap) && cap > 0) CONFIG.hardCap = cap;
+  if(!isNaN(delta) && delta > 0) CONFIG.plateauDelta = delta;
+
+  document.getElementById("runBtn").disabled = true;
+  document.getElementById("runBtn").textContent = "Running…";
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("dashboard").scrollIntoView({behavior:"smooth"});
+
+  await runPipeline(topic);
+
+  document.getElementById("runBtn").disabled = false;
+  document.getElementById("runBtn").textContent = "Run the pipeline →";
+});
+</script>
+</body>
+</html>
