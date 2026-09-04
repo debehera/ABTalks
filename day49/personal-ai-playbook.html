@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal AI Playbook — Architecture-first workflows for engineers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+============================================================ */
+:root{
+  --bg:#0C0E13;
+  --bg-elevated:#12151C;
+  --surface:#171B24;
+  --surface-2:#1E232E;
+  --border:#262C39;
+  --border-soft:#1D2230;
+  --text:#E7E9EE;
+  --text-dim:#9AA3B5;
+  --text-faint:#5D6478;
+  --accent:#7C9DFF;
+  --accent-dim:#3A4670;
+  --accent-ink:#0C0E13;
+  --amber:#F0A860;
+  --green:#6CCB9B;
+  --red:#E8697D;
+  --radius-sm:6px;
+  --radius:10px;
+  --radius-lg:16px;
+  --font-display:'Sora', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+  --shadow: 0 10px 30px -12px rgba(0,0,0,.55);
+  --transition: 180ms cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+  --bg:#F6F5F2;
+  --bg-elevated:#FFFFFF;
+  --surface:#FFFFFF;
+  --surface-2:#F0EFEA;
+  --border:#DEDCD4;
+  --border-soft:#E7E5DE;
+  --text:#1B1D22;
+  --text-dim:#5B5E68;
+  --text-faint:#8B8E97;
+  --accent:#3B5BDB;
+  --accent-dim:#DCE3FB;
+  --accent-ink:#FFFFFF;
+  --amber:#B5710F;
+  --green:#1F8A5A;
+  --red:#C4344A;
+  --shadow: 0 10px 30px -14px rgba(20,20,20,.18);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--font-body);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  transition:background var(--transition), color var(--transition);
+}
+::selection{ background:var(--accent-dim); color:var(--text); }
+a{color:inherit;}
+button{font-family:inherit; cursor:pointer;}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
+
+h1,h2,h3,h4{font-family:var(--font-display); font-weight:700; letter-spacing:-0.01em;}
+code, .mono{font-family:var(--font-mono);}
+
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+}
+
+/* ============================================================
+   APP SHELL
+============================================================ */
+.app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+
+/* ---- Sidebar ---- */
+.sidebar{
+  background:var(--bg-elevated); border-right:1px solid var(--border-soft);
+  display:flex; flex-direction:column; padding:20px 14px; gap:4px;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 20px; }
+.brand-mark{
+  width:30px; height:30px; border-radius:8px; flex-shrink:0;
+  background:linear-gradient(155deg, var(--accent), #4A5FD9);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:800; font-size:14px; color:#fff;
+}
+.brand-text{ display:flex; flex-direction:column; line-height:1.2; }
+.brand-text b{ font-family:var(--font-display); font-size:14.5px; font-weight:700; }
+.brand-text span{ font-size:11px; color:var(--text-faint); }
+
+.nav-group-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); padding:14px 10px 6px; }
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px;
+  color:var(--text-dim); background:none; border:none; width:100%; text-align:left;
+  font-size:13.5px; font-weight:500; transition:background var(--transition), color var(--transition);
+}
+.nav-item:hover{ background:var(--surface); color:var(--text); }
+.nav-item.active{ background:var(--accent-dim); color:var(--accent); }
+[data-theme="light"] .nav-item.active{ color:#28409E; }
+.nav-item .ic{ width:17px; text-align:center; flex-shrink:0; font-size:14px; }
+
+.sidebar-footer{ margin-top:auto; padding-top:14px; border-top:1px solid var(--border-soft); display:flex; flex-direction:column; gap:6px; }
+
+/* ---- Main ---- */
+.main{ min-width:0; display:flex; flex-direction:column; }
+.topbar{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+  padding:14px 28px; background:rgba(12,14,19,.78); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-soft);
+}
+[data-theme="light"] .topbar{ background:rgba(246,245,242,.82); }
+.topbar-title{ font-family:var(--font-display); font-size:17px; font-weight:700; }
+.topbar-sub{ font-size:12.5px; color:var(--text-faint); margin-top:1px; }
+.topbar-actions{ display:flex; align-items:center; gap:8px; }
+
+.icon-btn{
+  width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  background:var(--surface); border:1px solid var(--border); color:var(--text-dim); font-size:15px;
+  transition:all var(--transition);
+}
+.icon-btn:hover{ color:var(--text); border-color:var(--text-faint); }
+
+.searchbox{
+  display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:7px 10px; min-width:220px; color:var(--text-faint); font-size:13px;
+}
+.searchbox kbd{
+  margin-left:auto; font-family:var(--font-mono); font-size:10.5px; background:var(--surface-2);
+  border:1px solid var(--border); padding:1px 5px; border-radius:4px; color:var(--text-faint);
+}
+
+.content{ padding:26px 28px 80px; max-width:1180px; width:100%; margin:0 auto; }
+.view{ display:none; animation:fadeIn 240ms ease; }
+.view.active{ display:block; }
+@keyframes fadeIn{ from{ opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+.page-head{ margin-bottom:22px; }
+.page-head h1{ font-size:24px; margin-bottom:4px; }
+.page-head p{ color:var(--text-dim); font-size:14px; max-width:640px; }
+
+/* ============================================================
+   PRIMITIVES
+============================================================ */
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:9px 15px; border-radius:8px;
+  font-size:13.5px; font-weight:600; border:1px solid var(--border); background:var(--surface);
+  color:var(--text); transition:all var(--transition);
+}
+.btn:hover{ border-color:var(--text-faint); }
+.btn.primary{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.btn.primary:hover{ filter:brightness(1.08); }
+.btn.ghost{ background:transparent; border-color:transparent; }
+.btn.ghost:hover{ background:var(--surface); }
+.btn.sm{ padding:6px 10px; font-size:12.5px; }
+.btn.danger{ color:var(--red); }
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:20px;
+}
+.tag{
+  display:inline-flex; align-items:center; padding:3px 9px; border-radius:100px; font-size:11px;
+  font-weight:600; background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim);
+}
+.badge-dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; margin-right:6px; }
+
+textarea, input[type=text], select{
+  width:100%; background:var(--bg-elevated); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:9px 11px; font-family:var(--font-body); font-size:13.5px;
+  transition:border-color var(--transition);
+}
+textarea:focus, input:focus, select:focus{ border-color:var(--accent); outline:none; }
+textarea{ resize:vertical; min-height:70px; line-height:1.5; }
+label.field-label{ display:block; font-size:12.5px; font-weight:600; color:var(--text-dim); margin-bottom:6px; }
+.field{ margin-bottom:16px; }
+.helptext{ font-size:12px; color:var(--text-faint); margin-top:5px; line-height:1.5; }
+
+/* ============================================================
+   EXPLAINER BANNER (persistent, dismissible)
+============================================================ */
+.explainer{
+  background:linear-gradient(120deg, var(--accent-dim), var(--surface) 60%);
+  border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 22px;
+  margin-bottom:24px; position:relative; display:flex; gap:16px; align-items:flex-start;
+}
+.explainer .ex-icon{
+  width:38px; height:38px; border-radius:10px; background:var(--accent); color:var(--accent-ink);
+  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+}
+.explainer h3{ font-size:15.5px; margin-bottom:5px; }
+.explainer p{ font-size:13.5px; color:var(--text-dim); max-width:680px; }
+.explainer .ex-sections{ display:flex; gap:14px; margin-top:10px; flex-wrap:wrap; }
+.explainer .ex-sections span{ font-size:12px; color:var(--text-dim); }
+.explainer .ex-sections b{ color:var(--text); }
+.explainer .ex-close{
+  position:absolute; top:14px; right:14px; width:26px; height:26px; border-radius:6px;
+  background:transparent; border:1px solid transparent; color:var(--text-faint); font-size:13px;
+}
+.explainer .ex-close:hover{ background:var(--surface-2); color:var(--text); }
+
+/* ============================================================
+   STATS
+============================================================ */
+.stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+.stat-card .num{ font-family:var(--font-display); font-size:24px; font-weight:700; }
+.stat-card .lbl{ font-size:12px; color:var(--text-faint); margin-top:2px; }
+
+/* ============================================================
+   SECTION HEADINGS
+============================================================ */
+.section-title{ display:flex; align-items:center; justify-content:space-between; margin:32px 0 14px; }
+.section-title h2{ font-size:16.5px; }
+.section-title p{ font-size:12.5px; color:var(--text-faint); margin-top:2px; }
+
+/* ============================================================
+   CATEGORY / WORKFLOW GRID
+============================================================ */
+.category-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.category-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:18px; cursor:pointer; transition:all var(--transition); text-align:left;
+}
+.category-card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+.category-card .cat-icon{ font-size:20px; margin-bottom:10px; display:block; }
+.category-card h4{ font-size:14px; margin-bottom:4px; }
+.category-card p{ font-size:12px; color:var(--text-faint); }
+.category-card .cat-count{ font-size:11px; color:var(--accent); margin-top:10px; font-weight:600; }
+
+.workflow-list{ display:flex; flex-direction:column; gap:10px; }
+.workflow-row{
+  display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:14px 16px; transition:border-color var(--transition);
+}
+.workflow-row:hover{ border-color:var(--text-faint); }
+.wf-main{ flex:1; min-width:0; }
+.wf-main h4{ font-size:13.5px; font-weight:600; margin-bottom:3px; display:flex; align-items:center; gap:8px; }
+.wf-main p{ font-size:12px; color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wf-actions{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.star-btn{ background:none; border:none; color:var(--text-faint); font-size:15px; }
+.star-btn.active{ color:var(--amber); }
+
+.filter-bar{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.chip{
+  padding:6px 12px; border-radius:100px; font-size:12.5px; font-weight:600; background:var(--surface);
+  border:1px solid var(--border); color:var(--text-dim); transition:all var(--transition);
+}
+.chip.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.search-inline{ flex:1; min-width:180px; position:relative; }
+.search-inline input{ padding-left:32px; }
+.search-inline .sic{ position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-faint); font-size:13px; }
+
+/* ============================================================
+   MODAL / DRAWER
+============================================================ */
+.overlay{
+  position:fixed; inset:0; background:rgba(5,6,9,.6); backdrop-filter:blur(3px); z-index:100;
+  display:none; align-items:flex-start; justify-content:center; padding:5vh 20px;
+}
+.overlay.open{ display:flex; }
+.modal{
+  background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-lg);
+  width:100%; max-width:680px; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow);
+  animation:pop 200ms cubic-bezier(.2,.8,.2,1);
+}
+.modal.wide{ max-width:920px; }
+@keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
+.modal-head{
+  display:flex; align-items:flex-start; justify-content:space-between; padding:20px 22px;
+  border-bottom:1px solid var(--border-soft); position:sticky; top:0; background:var(--bg-elevated); z-index:2;
+}
+.modal-head h2{ font-size:17px; }
+.modal-head p{ font-size:12.5px; color:var(--text-faint); margin-top:3px; }
+.modal-body{ padding:22px; }
+.modal-close{ background:none; border:none; color:var(--text-faint); font-size:16px; padding:4px; }
+.modal-close:hover{ color:var(--text); }
+.modal-foot{ display:flex; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid var(--border-soft); }
+
+/* ============================================================
+   WORKFLOW DETAIL
+============================================================ */
+.template-box{
+  background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+  font-family:var(--font-mono); font-size:12.5px; line-height:1.7; white-space:pre-wrap; word-break:break-word;
+  color:var(--text-dim); max-height:340px; overflow-y:auto; position:relative;
+}
+.template-box .var{ color:var(--accent); font-weight:600; }
+.copy-row{ display:flex; justify-content:space-between; align-items:center; margin:10px 0 4px; }
+.var-form{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.example-block{ background:var(--surface-2); border-radius:8px; padding:12px 14px; margin-top:8px; font-size:12.5px; color:var(--text-dim); }
+.practice-list{ list-style:none; display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.practice-list li{ font-size:13px; color:var(--text-dim); padding-left:18px; position:relative; }
+.practice-list li:before{ content:"—"; position:absolute; left:0; color:var(--accent); }
+
+/* ============================================================
+   BUILDING BLOCKS (Prompt Builder / Loop Builder)
+============================================================ */
+.builder-layout{ display:grid; grid-template-columns:320px 1fr; gap:20px; align-items:flex-start; }
+.block-picker{ display:flex; flex-direction:column; gap:8px; position:sticky; top:80px; }
+.block-picker-item{
+  background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px;
+  cursor:pointer; transition:all var(--transition);
+}
+.block-picker-item:hover{ border-color:var(--accent); }
+.block-picker-item .bpi-top{ display:flex; align-items:center; justify-content:space-between; }
+.block-picker-item h5{ font-size:13px; font-weight:600; }
+.block-picker-item p{ font-size:11.5px; color:var(--text-faint); margin-top:4px; line-height:1.5; }
+.add-mark{ width:20px; height:20px; border-radius:6px; background:var(--accent-dim); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+
+.assembled-area{ display:flex; flex-direction:column; gap:12px; min-height:120px; }
+.empty-assembly{
+  border:1.5px dashed var(--border); border-radius:var(--radius-lg); padding:36px 20px; text-align:center;
+  color:var(--text-faint); font-size:13px;
+}
+.assembled-block{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;
+}
+.ab-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.ab-head .ab-title{ display:flex; align-items:center; gap:8px; }
+.ab-head h5{ font-size:13px; font-weight:700; }
+.ab-head .ab-num{ width:20px; height:20px; border-radius:5px; background:var(--surface-2); color:var(--text-faint); font-size:11px; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); }
+.ab-explain{ font-size:11.5px; color:var(--text-faint); margin-bottom:10px; line-height:1.5; }
+.ab-remove{ background:none; border:none; color:var(--text-faint); font-size:14px; }
+.ab-remove:hover{ color:var(--red); }
+
+.live-preview{
+  position:sticky; bottom:0; margin-top:20px; background:var(--bg-elevated); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:18px 20px; box-shadow:var(--shadow);
+}
+.live-preview h3{ font-size:14px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+
+/* ============================================================
+   ONBOARDING
+============================================================ */
+.onboard-steps{ display:flex; flex-direction:column; gap:14px; margin:16px 0; }
+.onboard-step{ display:flex; gap:12px; }
+.onboard-step .os-num{ width:26px; height:26px; border-radius:7px; background:var(--accent-dim); color:var(--accent); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:var(--font-mono); }
+.onboard-step h5{ font-size:13.5px; margin-bottom:3px; }
+.onboard-step p{ font-size:12.5px; color:var(--text-faint); }
+
+/* ============================================================
+   TOAST
+============================================================ */
+.toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); z-index:200;
+  background:var(--text); color:var(--bg); padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600;
+  opacity:0; pointer-events:none; transition:all 220ms ease; box-shadow:var(--shadow);
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ============================================================
+   MISC
+============================================================ */
+.two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.divider{ height:1px; background:var(--border-soft); margin:20px 0; }
+.empty-state{ text-align:center; padding:50px 20px; color:var(--text-faint); }
+.empty-state .es-icon{ font-size:26px; margin-bottom:10px; }
+.empty-state h4{ color:var(--text-dim); font-size:14px; margin-bottom:5px; }
+.empty-state p{ font-size:12.5px; max-width:340px; margin:0 auto; }
+
+.kbd-hint{ display:inline-flex; align-items:center; gap:3px; font-family:var(--font-mono); font-size:10.5px; background:var(--surface-2); border:1px solid var(--border); padding:1px 5px; border-radius:4px; color:var(--text-faint); }
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width:980px){
+  .app{ grid-template-columns:1fr; }
+  .sidebar{ position:fixed; left:-260px; top:0; z-index:60; width:240px; transition:left var(--transition); box-shadow:var(--shadow); }
+  .sidebar.open{ left:0; }
+  .stat-row{ grid-template-columns:1fr 1fr; }
+  .category-grid{ grid-template-columns:1fr 1fr; }
+  .builder-layout{ grid-template-columns:1fr; }
+  .block-picker{ position:static; }
+  .var-form{ grid-template-columns:1fr; }
+  .two-col{ grid-template-columns:1fr; }
+  .searchbox{ display:none; }
+  .mobile-menu-btn{ display:flex !important; }
+}
+@media (max-width:600px){
+  .stat-row{ grid-template-columns:1fr 1fr; }
+  .category-grid{ grid-template-columns:1fr; }
+  .content{ padding:18px 16px 60px; }
+  .topbar{ padding:12px 16px; }
+}
+.mobile-menu-btn{ display:none; }
+</style>
+</head>
+<body data-theme="dark">
+
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     OVERLAYS (populated by JS mostly, static shells here)
+============================================================ -->
+<div class="overlay" id="overlayHelp">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>What is this?</h2>
+        <p>A quick tour of the Personal AI Playbook</p>
+      </div>
+      <button class="modal-close" onclick="closeOverlay('overlayHelp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px; color:var(--text-dim); margin-bottom:16px;">
+        This is a personal toolkit for working with AI models (Claude, GPT, Copilot, Gemini) as a software engineer.
+        Instead of hundreds of one-off prompts, it gives you reusable <b>workflows</b> — templates with fill-in-the-blank
+        variables — plus two builder tools for creating your own prompts from scratch.
+      </p>
+      <div class="onboard-steps">
+        <div class="onboard-step">
+          <div class="os-num">1</div>
+          <div><h5>Dashboard</h5><p>An overview of your saved workflows, grouped by task category (architecture, debugging, code review, docs, learning, data analysis).</p></div>
+        </div>
+        <div class="onboard-step">
+          <div class="os-num">2</div>
+          <div><h5>Workflows</h5><p>Ready-made prompt templates for recurring engineering tasks. Each has editable variables, a live-filled preview, an example, best practices, and a one-click copy button.</p></div>
+        </div>
+        <div class="onboard-step">
+          <div class="os-num">3</div>
+          <div><h5>Prompt Builder</h5><p>Assemble a custom prompt from building blocks — Role, Objective, Context, Constraints, Reasoning strategy, Output format, Tone, Examples, Quality checks — with a live preview as you go.</p></div>
+        </div>
+        <div class="onboard-step">
+          <div class="os-num">4</div>
+          <div><h5>Loop Builder</h5><p>Turn any prompt into a self-checking, iterating prompt by defining a goal, how to judge each attempt, how to improve it, and when to stop.</p></div>
+        </div>
+        <div class="onboard-step">
+          <div class="os-num">5</div>
+          <div><h5>Building Blocks</h5><p>A reference library explaining every block used by the two builders, so you always know what each piece does and why it's there.</p></div>
+        </div>
+      </div>
+      <p style="font-size:12px; color:var(--text-faint); margin-top:6px;">Everything you create is saved to this browser's local storage — nothing leaves your machine. Use Export anytime to back it up as a JSON file.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" onclick="closeOverlay('overlayHelp')">Got it</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayOnboard">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>Welcome to your Personal AI Playbook</h2>
+        <p>Built from your interview — here's what's inside</p>
+      </div>
+      <button class="modal-close" onclick="closeOverlay('overlayOnboard')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px; color:var(--text-dim); margin-bottom:16px;">
+        You told us you're a <b>software engineer</b> who uses AI <b>constantly</b> for architecture decisions,
+        code review, docs, and ramping up on new tools — and that your biggest time-sink is
+        <b>re-explaining context</b> every session. This playbook is built around fixing exactly that.
+      </p>
+      <div class="onboard-steps">
+        <div class="onboard-step">
+          <div class="os-num">★</div>
+          <div><h5>Start with "Design a feature architecture"</h5><p>Your flagship workflow, pinned to the top of the Dashboard — reuse it every time you scope a new feature.</p></div>
+        </div>
+        <div class="onboard-step">
+          <div class="os-num">✎</div>
+          <div><h5>Build your own with the Prompt Builder</h5><p>When a ready-made workflow isn't quite right, assemble one from blocks in under a minute.</p></div>
+        </div>
+        <div class="onboard-step">
+          <div class="os-num">↻</div>
+          <div><h5>Loop it</h5><p>For tasks like refactors or test generation, turn any prompt into one that iterates until it meets your bar.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" onclick="closeOverlay('overlayOnboard')">Start exploring</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayWorkflow">
+  <div class="modal wide" id="workflowModalContent"></div>
+</div>
+
+<div class="overlay" id="overlayEditWorkflow">
+  <div class="modal wide" id="editWorkflowModalContent"></div>
+</div>
+
+<div class="overlay" id="overlayShortcuts">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2>Keyboard shortcuts</h2><p>Move around faster</p></div>
+      <button class="modal-close" onclick="closeOverlay('overlayShortcuts')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+        <div style="display:flex; justify-content:space-between;"><span>Open search</span><span class="kbd-hint">Ctrl / ⌘ + K</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Go to Dashboard</span><span class="kbd-hint">G then D</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Go to Workflows</span><span class="kbd-hint">G then W</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Go to Prompt Builder</span><span class="kbd-hint">G then P</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Go to Loop Builder</span><span class="kbd-hint">G then L</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Toggle dark / light</span><span class="kbd-hint">Ctrl / ⌘ + J</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Close any dialog</span><span class="kbd-hint">Esc</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Show this list</span><span class="kbd-hint">?</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlaySearch">
+  <div class="modal">
+    <div class="modal-body" style="padding:14px;">
+      <div class="search-inline" style="margin-bottom:10px;">
+        <span class="sic">⌕</span>
+        <input type="text" id="globalSearchInput" placeholder="Search workflows, blocks, sections…" autocomplete="off">
+      </div>
+      <div id="globalSearchResults" style="display:flex; flex-direction:column; gap:4px; max-height:360px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+============================================================ -->
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">AI</div>
+      <div class="brand-text"><b>AI Playbook</b><span>for software engineers</span></div>
+    </div>
+
+    <div class="nav-group-label">Overview</div>
+    <button class="nav-item active" data-view="dashboard" onclick="showView('dashboard')"><span class="ic">▤</span> Dashboard</button>
+
+    <div class="nav-group-label">Work with prompts</div>
+    <button class="nav-item" data-view="workflows" onclick="showView('workflows')"><span class="ic">▥</span> Workflows</button>
+    <button class="nav-item" data-view="promptbuilder" onclick="showView('promptbuilder')"><span class="ic">✎</span> Prompt Builder</button>
+    <button class="nav-item" data-view="loopbuilder" onclick="showView('loopbuilder')"><span class="ic">↻</span> Loop Builder</button>
+
+    <div class="nav-group-label">Learn</div>
+    <button class="nav-item" data-view="blocks" onclick="showView('blocks')"><span class="ic">▦</span> Building Blocks</button>
+
+    <div class="nav-group-label">You</div>
+    <button class="nav-item" data-view="settings" onclick="showView('settings')"><span class="ic">⚙</span> Settings</button>
+
+    <div class="sidebar-footer">
+      <button class="nav-item" onclick="openOverlay('overlayHelp')"><span class="ic">?</span> What is this?</button>
+      <button class="nav-item" onclick="openOverlay('overlayShortcuts')"><span class="ic">⌘</span> Shortcuts</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="icon-btn mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <div>
+          <div class="topbar-title" id="topbarTitle">Dashboard</div>
+          <div class="topbar-sub" id="topbarSub">Your saved AI prompt workflows, at a glance</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="searchbox" onclick="openOverlay('overlaySearch'); setTimeout(()=>document.getElementById('globalSearchInput').focus(),50)">
+          <span>⌕</span><span>Search everything</span><kbd>⌘K</kbd>
+        </div>
+        <button class="icon-btn" title="What is this tool?" onclick="openOverlay('overlayHelp')">?</button>
+        <button class="icon-btn" title="Toggle dark / light mode" id="themeToggle" onclick="toggleTheme()">◐</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============================= DASHBOARD ============================= -->
+      <section class="view active" id="view-dashboard">
+        <div class="explainer" id="mainExplainer">
+          <div class="ex-icon">▤</div>
+          <div>
+            <h3>What this tool does</h3>
+            <p>The Personal AI Playbook stores reusable AI prompt systems so you stop re-explaining the same context every time.
+            Use <b>Workflows</b> for ready-made templates, the <b>Prompt Builder</b> to assemble a custom prompt from labelled
+            building blocks, and the <b>Loop Builder</b> to turn any prompt into one that iterates and checks its own work.</p>
+            <div class="ex-sections">
+              <span><b>Workflows</b> — fill-in templates for recurring tasks</span>
+              <span><b>Prompt Builder</b> — assemble prompts from parts, live preview</span>
+              <span><b>Loop Builder</b> — add goals, checks, and stop conditions</span>
+              <span><b>Building Blocks</b> — what every piece means</span>
+            </div>
+          </div>
+          <button class="ex-close" onclick="dismissExplainer()" title="Dismiss">✕</button>
+        </div>
+
+        <div class="stat-row" id="statRow"></div>
+
+        <div class="section-title">
+          <div><h2>Categories</h2><p>Workflows organized by the kind of engineering work they support</p></div>
+        </div>
+        <div class="category-grid" id="categoryGrid"></div>
+
+        <div class="section-title">
+          <h2>★ Your flagship workflow</h2>
+          <button class="btn sm" onclick="showView('workflows')">See all workflows</button>
+        </div>
+        <div id="flagshipWorkflow"></div>
+
+        <div class="section-title">
+          <h2>Recently used</h2>
+        </div>
+        <div class="workflow-list" id="recentList"></div>
+      </section>
+
+      <!-- ============================= WORKFLOWS ============================= -->
+      <section class="view" id="view-workflows">
+        <div class="page-head">
+          <h1>Workflows</h1>
+          <p>Ready-made, editable prompt templates for tasks you do again and again. Fill in the variables, copy, and paste into any model.</p>
+        </div>
+        <div class="filter-bar">
+          <div class="search-inline"><span class="sic">⌕</span><input type="text" id="workflowSearch" placeholder="Search workflows…" oninput="renderWorkflowList()"></div>
+          <button class="btn sm primary" onclick="openWorkflowEditor(null)">+ New workflow</button>
+        </div>
+        <div class="filter-bar" id="categoryChips"></div>
+        <div class="workflow-list" id="workflowList"></div>
+      </section>
+
+      <!-- ============================= PROMPT BUILDER ============================= -->
+      <section class="view" id="view-promptbuilder">
+        <div class="page-head">
+          <h1>Prompt Builder</h1>
+          <p>Assemble a prompt from labelled building blocks. Add the blocks you need, fill them in with the dropdowns, and watch the full prompt take shape below.</p>
+        </div>
+        <div class="builder-layout">
+          <div class="block-picker" id="pbPicker"></div>
+          <div>
+            <div class="assembled-area" id="pbAssembled"></div>
+            <div class="live-preview">
+              <h3>▸ Live preview</h3>
+              <div class="template-box" id="pbPreview" style="max-height:none;"></div>
+              <div class="copy-row">
+                <span class="helptext">This updates automatically as you edit blocks above.</span>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn sm" onclick="sendPromptToLoop()">↻ Send to Loop Builder</button>
+                  <button class="btn sm primary" onclick="copyText(getPromptBuilderText(), event)">⧉ Copy prompt</button>
+                </div>
+              </div>
+              <div style="margin-top:12px; display:flex; gap:8px;">
+                <button class="btn sm ghost" onclick="savePromptAsWorkflow()">💾 Save as workflow</button>
+                <button class="btn sm ghost" onclick="resetPromptBuilder()">Clear all blocks</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= LOOP BUILDER ============================= -->
+      <section class="view" id="view-loopbuilder">
+        <div class="page-head">
+          <h1>Loop Builder</h1>
+          <p>Turn any prompt into an <b>autonomous looping prompt</b> — one where the AI evaluates its own output against your
+          criteria, revises it, and repeats until it meets the bar or hits a stop condition. Useful for refactors, test
+          generation, and polishing docs without you babysitting every pass.</p>
+        </div>
+        <div class="field">
+          <label class="field-label">Base prompt to loop</label>
+          <textarea id="loopBase" rows="4" placeholder="Paste a prompt here, or build one in the Prompt Builder and click 'Send to Loop Builder'."></textarea>
+          <div class="helptext">This is the task the AI repeats and refines each iteration — e.g. "Refactor this function for readability."</div>
+        </div>
+
+        <div class="two-col">
+          <div class="field">
+            <label class="field-label">Goal <span class="tag" style="margin-left:6px;">what "done" means</span></label>
+            <textarea id="loopGoal" rows="2" placeholder="e.g. All functions under 30 lines, no duplicated logic, tests still pass."></textarea>
+            <div class="helptext">The single outcome that ends the loop successfully. Without this the AI won't know when to stop improving.</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Evaluation criteria <span class="tag" style="margin-left:6px;">how each attempt is scored</span></label>
+            <textarea id="loopEval" rows="2" placeholder="e.g. Score 1-10 on readability, test coverage, and adherence to style guide."></textarea>
+            <div class="helptext">How the AI judges its own output after each pass — turns "looks fine" into a measurable check.</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="field">
+            <label class="field-label">Improvement strategy <span class="tag" style="margin-left:6px;">what changes each round</span></label>
+            <select id="loopStrategy">
+              <option>Fix the single lowest-scoring criterion first, then re-evaluate</option>
+              <option>Address all flagged issues at once, then re-evaluate</option>
+              <option>Try two alternative approaches and keep the higher-scoring one</option>
+              <option>Ask a clarifying question if requirements are ambiguous, otherwise revise</option>
+              <option>Custom (edit below)</option>
+            </select>
+            <div class="helptext">Defines what the AI actually does differently between iterations, instead of repeating the same attempt.</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Stop conditions <span class="tag" style="margin-left:6px;">when the loop ends</span></label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <select id="loopMaxIter" style="max-width:160px;">
+                <option value="3">Stop after 3 iterations</option>
+                <option value="5" selected>Stop after 5 iterations</option>
+                <option value="8">Stop after 8 iterations</option>
+                <option value="0">No iteration cap</option>
+              </select>
+              <select id="loopScoreStop" style="max-width:200px;">
+                <option value="none">No score threshold</option>
+                <option value="8">Stop early if score ≥ 8/10</option>
+                <option value="9">Stop early if score ≥ 9/10</option>
+                <option value="10">Stop only at a perfect score</option>
+              </select>
+            </div>
+            <div class="helptext">Prevents an endless loop — stop on success, on a score threshold, or after a fixed number of tries.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Safety rules <span class="tag" style="margin-left:6px;">guardrails</span></label>
+          <div style="display:flex; flex-direction:column; gap:8px;" id="loopSafetyChecks">
+            <label style="display:flex; gap:8px; align-items:center; font-size:13px;"><input type="checkbox" checked> Never delete or overwrite files without asking first</label>
+            <label style="display:flex; gap:8px; align-items:center; font-size:13px;"><input type="checkbox" checked> Report the score and reasoning after every iteration, don't just show the final result</label>
+            <label style="display:flex; gap:8px; align-items:center; font-size:13px;"><input type="checkbox"> Ask before changing public APIs or function signatures</label>
+            <label style="display:flex; gap:8px; align-items:center; font-size:13px;"><input type="checkbox"> Stop and ask for guidance if two iterations in a row score lower than the previous one</label>
+          </div>
+          <div class="helptext">Boundaries the loop can't cross — so it can run semi-autonomously without surprising you.</div>
+        </div>
+
+        <div class="live-preview">
+          <h3>▸ Looping prompt preview</h3>
+          <div class="template-box" id="loopPreview" style="max-height:none;"></div>
+          <div class="copy-row">
+            <span class="helptext">Rebuilds live from the fields above.</span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn sm ghost" onclick="saveLoopAsWorkflow()">💾 Save as workflow</button>
+              <button class="btn sm primary" onclick="copyText(getLoopBuilderText(), event)">⧉ Copy looping prompt</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= BUILDING BLOCKS (reference) ============================= -->
+      <section class="view" id="view-blocks">
+        <div class="page-head">
+          <h1>Building Blocks</h1>
+          <p>Every piece used by the Prompt Builder and Loop Builder, explained plainly. Reference this any time a term is unclear.</p>
+        </div>
+        <div id="blocksReference"></div>
+      </section>
+
+      <!-- ============================= SETTINGS ============================= -->
+      <section class="view" id="view-settings">
+        <div class="page-head">
+          <h1>Settings</h1>
+          <p>Your data, your device. Everything below is stored only in this browser's local storage.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="font-size:14.5px; margin-bottom:4px;">Your profile</h3>
+          <p style="font-size:12.5px; color:var(--text-faint); margin-bottom:14px;">From your interview — used to pick which categories show by default.</p>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Role</label><input type="text" id="profRole" value="Software / technical (developer, data, engineering)"></div>
+            <div class="field"><label class="field-label">Experience level</label>
+              <select id="profExp"><option selected>Intermediate — uses some structure/techniques</option><option>Beginner — casual requests</option><option>Advanced — designs structured prompt systems</option></select>
+            </div>
+          </div>
+          <div class="field"><label class="field-label">Preferred models</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <span class="tag">Claude</span><span class="tag">ChatGPT / GPT</span><span class="tag">GitHub Copilot</span><span class="tag">Gemini</span>
+            </div>
+          </div>
+          <button class="btn sm" onclick="showToast('Profile saved')">Save profile</button>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="font-size:14.5px; margin-bottom:4px;">Appearance</h3>
+          <p style="font-size:12.5px; color:var(--text-faint); margin-bottom:14px;">Switch themes or restart the onboarding tour.</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn sm" onclick="setTheme('dark')">◐ Dark mode</button>
+            <button class="btn sm" onclick="setTheme('light')">○ Light mode</button>
+            <button class="btn sm" onclick="openOverlay('overlayOnboard')">↺ Replay onboarding</button>
+            <button class="btn sm" onclick="mainExplainerRestore()">↺ Restore dashboard explainer</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="font-size:14.5px; margin-bottom:4px;">Import / export</h3>
+          <p style="font-size:12.5px; color:var(--text-faint); margin-bottom:14px;">Back up your workflows and favorites, or move them to another browser.</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn sm" onclick="exportData()">⇩ Export as JSON</button>
+            <button class="btn sm" onclick="document.getElementById('importFile').click()">⇧ Import JSON</button>
+            <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importData(event)">
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:14.5px; margin-bottom:4px; color:var(--red);">Reset</h3>
+          <p style="font-size:12.5px; color:var(--text-faint); margin-bottom:14px;">Deletes all custom workflows and favorites and restores the defaults. Cannot be undone.</p>
+          <button class="btn sm danger" onclick="resetAllData()">Reset all data</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA — building blocks, categories, seed workflows
+============================================================ */
+
+const BLOCK_DEFS = {
+  role: {
+    label:"Role", icon:"◆",
+    why:"Sets who the AI is acting as — this shapes its vocabulary, priorities, and what it assumes you already know.",
+    type:"select",
+    options:["Senior Software Architect","Staff/Principal Engineer","Security-focused Code Reviewer","Pragmatic Tech Lead","Patient Technical Mentor","Skeptical Devil's Advocate","Technical Writer","Custom…"]
+  },
+  objective: {
+    label:"Objective", icon:"◎",
+    why:"The single outcome you want from this prompt. Naming one clear objective keeps the AI from trying to do five things at once.",
+    type:"textarea",
+    placeholder:"e.g. Propose two architecture options for adding real-time notifications to our service, with tradeoffs."
+  },
+  context: {
+    label:"Context", icon:"▤",
+    why:"Background the AI needs — your stack, constraints, prior decisions, relevant files. This is the block that saves you from re-explaining yourself every session.",
+    type:"textarea",
+    placeholder:"e.g. Node.js monolith, Postgres, ~40k daily active users, deploying on AWS ECS. We already use SQS for async jobs."
+  },
+  constraints: {
+    label:"Constraints", icon:"⛒",
+    why:"Hard boundaries the output must respect — tech choices, budget, style guide, performance or security requirements.",
+    type:"textarea",
+    placeholder:"e.g. Must not require a new datastore. Must keep p99 latency under 200ms. Follow our existing REST conventions."
+  },
+  reasoning: {
+    label:"Reasoning strategy", icon:"⟠",
+    why:"How the AI should think before answering. Naming a strategy (rather than leaving it implicit) noticeably improves quality on hard, multi-step problems.",
+    type:"select",
+    options:["Think step-by-step, then answer","List and compare tradeoffs explicitly before recommending","Reason from first principles, question assumptions","Build a pros/cons table before concluding","Play devil's advocate against your first instinct","No special strategy needed"]
+  },
+  outputformat: {
+    label:"Output format", icon:"▦",
+    why:"The exact shape you want back — so you can use the response directly instead of reformatting it yourself.",
+    type:"select",
+    options:["Markdown document with headers","Architecture Decision Record (ADR) format","Numbered list of options with pros/cons","Table","Code block only, no prose","Short paragraph, no formatting","Step-by-step checklist"]
+  },
+  tone: {
+    label:"Tone", icon:"◐",
+    why:"The voice and register of the response. Matching tone to the situation avoids output that's too casual for a design doc or too stiff for a quick chat.",
+    type:"select",
+    options:["Neutral and professional","Direct and concise, no hedging","Teaching / explanatory, assume less prior knowledge","Critical and skeptical, actively look for flaws","Collaborative, like a peer reviewing with you"]
+  },
+  examples: {
+    label:"Examples", icon:"❝",
+    why:"Sample input/output pairs that show exactly what 'good' looks like. Even one example sharply narrows down ambiguity.",
+    type:"textarea",
+    placeholder:"e.g. Good ADR example: [paste a past ADR you liked, or describe its structure]."
+  },
+  qualitychecks: {
+    label:"Quality checks", icon:"✓",
+    why:"A checklist the AI verifies its own answer against before finalizing. Catches gaps, unstated assumptions, and sloppy edges.",
+    type:"textarea",
+    placeholder:"e.g. Confirm each option lists failure modes. Confirm recommendation states a clear reason. Flag any assumption not backed by the given context."
+  }
+};
+
+const LOOP_BLOCK_DEFS = {
+  goal: { label:"Goal", why:"What 'done' looks like for the whole loop — the AI's north star across every iteration." },
+  eval: { label:"Evaluation criteria", why:"How each iteration's output gets scored or judged, so progress is measurable rather than a vibe." },
+  strategy: { label:"Improvement strategy", why:"What the AI changes between iterations when the current attempt falls short of the goal." },
+  stop: { label:"Stop conditions", why:"When the loop ends — on success, after a fixed number of tries, or once returns diminish." },
+  safety: { label:"Safety rules", why:"Guardrails so a semi-autonomous loop can't do something destructive or run away unsupervised." }
+};
+
+const CATEGORIES = [
+  { id:"architecture", name:"Architecture & Design", icon:"▧", desc:"Scope, compare, and document design decisions before you write code." },
+  { id:"review", name:"Code Review", icon:"◈", desc:"Catch bugs, security issues, and style drift before merge." },
+  { id:"debugging", name:"Debugging", icon:"⚡", desc:"Root-cause stubborn bugs methodically instead of guessing." },
+  { id:"docs", name:"Docs & Technical Writing", icon:"✎", desc:"Turn tribal knowledge into READMEs, ADRs, and API docs." },
+  { id:"learning", name:"Learning & Ramp-up", icon:"◔", desc:"Get productive fast in a new language, framework, or codebase." },
+  { id:"data", name:"Data Analysis & Scripting", icon:"▤", desc:"Explore datasets and automate one-off scripting tasks." }
+];
+
+function seedWorkflows(){
+  return [
+    {
+      id:"wf-architecture-feature", category:"architecture", favorite:true, flagship:true,
+      title:"Design a feature architecture",
+      subtitle:"Scope a new feature into 2-3 concrete architecture options with tradeoffs, before writing any code.",
+      variables:[
+        {key:"FEATURE", label:"Feature to design", type:"text", placeholder:"e.g. real-time notifications"},
+        {key:"CURRENT_STACK", label:"Current stack / constraints", type:"textarea", placeholder:"e.g. Node.js monolith, Postgres, deployed on AWS ECS"},
+        {key:"SCALE", label:"Scale / non-functional requirements", type:"textarea", placeholder:"e.g. 40k DAU, p99 < 200ms, must survive a single AZ outage"},
+        {key:"NUM_OPTIONS", label:"Number of options to compare", type:"select", options:["2","3","4"]}
+      ],
+      template:`Act as a Senior Software Architect reviewing a new feature request with me.
+
+Objective: Propose {{NUM_OPTIONS}} distinct architecture options for building "{{FEATURE}}", then recommend one.
+
+Context — our current system:
+{{CURRENT_STACK}}
+
+Non-functional requirements:
+{{SCALE}}
+
+For each option, cover:
+1. A one-paragraph summary of the approach
+2. Key components and how data flows between them
+3. Tradeoffs: what gets easier, what gets harder
+4. Failure modes and how they're mitigated
+5. Rough implementation effort (S/M/L)
+
+Reasoning strategy: think through each option's tradeoffs explicitly before comparing them; don't just describe designs in isolation.
+
+Output format: Architecture Decision Record (ADR) format — Context, Options Considered, Decision, Consequences.
+
+End with your recommendation and the single strongest reason for it. Flag any assumption you had to make due to missing information.`,
+      example:`Filled with FEATURE="real-time notifications", the AI returns an ADR comparing e.g. WebSockets + Redis pub/sub vs. polling vs. SSE, each scored against your 40k DAU / p99 <200ms bar, ending with a recommendation and named assumptions (e.g. "assumed notifications don't need to survive a client reconnect gap").`,
+      practices:[
+        "Paste real constraints (scale numbers, existing stack) — vague context produces vague architecture.",
+        "Ask for tradeoffs explicitly, not just 'the best approach' — you want to see what you're giving up.",
+        "Push back and ask 'what would break this at 10x scale?' as a follow-up before committing."
+      ]
+    },
+    {
+      id:"wf-code-review", category:"review", favorite:false,
+      title:"Deep code review pass",
+      subtitle:"Review a diff or file for correctness, security, and maintainability with an explicit severity ranking.",
+      variables:[
+        {key:"CODE", label:"Code or diff to review", type:"textarea", placeholder:"Paste the diff or file here"},
+        {key:"LANGUAGE", label:"Language / framework", type:"text", placeholder:"e.g. TypeScript, Express"},
+        {key:"FOCUS", label:"Focus area", type:"select", options:["General correctness & style","Security","Performance","Readability & maintainability"]}
+      ],
+      template:`Act as a Security-focused Code Reviewer examining a pull request.
+
+Objective: Review the following {{LANGUAGE}} code with a focus on {{FOCUS}}.
+
+Code:
+{{CODE}}
+
+Reasoning strategy: read the code twice — once for what it's trying to do, once line-by-line for what it actually does — and flag any mismatch.
+
+For every issue found, report:
+- Severity: Blocker / Should-fix / Nitpick
+- Location (function or line reference)
+- Why it matters
+- A concrete suggested fix
+
+Output format: grouped by severity, Blockers first.
+
+Quality checks before you finalize: confirm you checked for unhandled errors, injection risks, and off-by-one or null cases. If the code has no issues in a category, say so explicitly rather than omitting it.`,
+      example:`With FOCUS="Security", the AI flags e.g. unsanitized user input reaching a query as a Blocker, with the exact line and a parameterized-query fix, then separately notes minor naming nitpicks so you can triage what actually blocks merge.`,
+      practices:[
+        "Paste the diff, not just the final file — reviewers reason better with what changed.",
+        "Run one focused pass (security) and a separate pass (readability) rather than asking for everything at once.",
+        "Treat 'no issues in category X' as a real signal, not a lazy skip — that's why the checklist forces it to say so."
+      ]
+    },
+    {
+      id:"wf-debug-root-cause", category:"debugging", favorite:false,
+      title:"Root-cause a stubborn bug",
+      subtitle:"Work through a bug methodically with hypotheses ranked by likelihood, instead of guess-and-check.",
+      variables:[
+        {key:"SYMPTOM", label:"Observed symptom", type:"textarea", placeholder:"e.g. Requests intermittently time out under load, ~1 in 200"},
+        {key:"EXPECTED", label:"Expected behavior", type:"text", placeholder:"e.g. All requests return within 500ms"},
+        {key:"TRIED", label:"What you've already tried / ruled out", type:"textarea", placeholder:"e.g. Not DB connection pool exhaustion — pool has headroom"},
+        {key:"LOGS", label:"Relevant logs / stack trace", type:"textarea", placeholder:"Paste logs here"}
+      ],
+      template:`Act as a Staff/Principal Engineer helping me debug a production issue.
+
+Objective: Find the most likely root cause of this bug and a way to confirm it.
+
+Symptom: {{SYMPTOM}}
+Expected behavior: {{EXPECTED}}
+Already ruled out: {{TRIED}}
+Logs / trace:
+{{LOGS}}
+
+Reasoning strategy: generate 3-5 hypotheses ranked by likelihood given the evidence, not just the first plausible one. For each, state what evidence would confirm or rule it out.
+
+Output format: numbered list of hypotheses (most likely first), each with a one-line confirmation test I can run.
+
+Quality checks: don't repeat a hypothesis I already said I ruled out. If the logs are insufficient to narrow it down, say exactly what additional logging or data you'd need.`,
+      example:`Given intermittent timeouts under load, the AI might rank "connection pool exhaustion under burst traffic" below what you've ruled out, then surface "downstream service backpressure" and "GC pause correlating with timeout window" as top hypotheses, each with a specific metric to check.`,
+      practices:[
+        "List what you've already ruled out — this is the single biggest time-saver in this workflow.",
+        "Paste real logs, not a paraphrase — exact error strings and timestamps carry signal.",
+        "Ask for a confirmation test per hypothesis so you're verifying, not just trying fixes at random."
+      ]
+    },
+    {
+      id:"wf-docs-readme", category:"docs", favorite:false,
+      title:"Write a README from a codebase summary",
+      subtitle:"Turn a project description into a clear, scannable README a new engineer could onboard from.",
+      variables:[
+        {key:"PROJECT", label:"Project name & one-line description", type:"text", placeholder:"e.g. billing-service — handles subscription billing and invoicing"},
+        {key:"DETAILS", label:"Key details (setup, structure, gotchas)", type:"textarea", placeholder:"How to run it, folder structure, known quirks"},
+        {key:"AUDIENCE", label:"Primary audience", type:"select", options:["New engineers joining the team","External open-source contributors","Future you, six months from now"]}
+      ],
+      template:`Act as a Technical Writer producing documentation for engineers.
+
+Objective: Write a README for "{{PROJECT}}", written for {{AUDIENCE}}.
+
+Details to incorporate:
+{{DETAILS}}
+
+Output format: Markdown document with headers — Overview, Getting Started, Project Structure, Common Tasks, Troubleshooting.
+
+Tone: neutral and professional, plain language, no marketing fluff.
+
+Quality checks: every command given must be copy-pasteable and complete. Call out any prerequisite (e.g. Node version, env vars) instead of assuming it. If information is missing to complete a section, insert a clearly marked TODO rather than inventing details.`,
+      example:`Given a billing-service description, the AI produces a README with a runnable "Getting Started" (env vars, install, run commands) and a Troubleshooting section built from the gotchas you listed, with TODOs marked wherever you didn't provide enough detail.`,
+      practices:[
+        "List gotchas explicitly (env vars, non-obvious setup steps) — these are what a generic README always misses.",
+        "Ask it to mark TODOs instead of guessing — silently invented details are worse than an obvious gap.",
+        "Reuse this as a Context block later so you never re-explain the project's structure again."
+      ]
+    },
+    {
+      id:"wf-learning-rampup", category:"learning", favorite:false,
+      title:"Ramp up on a new tool or framework",
+      subtitle:"Get a structured, practical crash course mapped to what you already know.",
+      variables:[
+        {key:"NEW_TOOL", label:"Tool / framework to learn", type:"text", placeholder:"e.g. Rust, Terraform, gRPC"},
+        {key:"BACKGROUND", label:"Your relevant background", type:"textarea", placeholder:"e.g. 5 years TypeScript/Node, comfortable with async, no systems languages"},
+        {key:"GOAL", label:"What you need to be able to do", type:"text", placeholder:"e.g. Ship a small production service within 2 weeks"}
+      ],
+      template:`Act as a Patient Technical Mentor teaching an experienced engineer a new tool.
+
+Objective: Get me productive in {{NEW_TOOL}} for this goal: {{GOAL}}
+
+My background: {{BACKGROUND}}
+
+Reasoning strategy: map new concepts to things I already know from my background wherever a genuine parallel exists, and call out the parts that have no clean parallel and need extra attention.
+
+Output format: numbered learning path, 5-7 steps, each with a one-line "why this step" and one small hands-on exercise.
+
+Tone: teaching / explanatory, but assume I'm an experienced engineer — skip beginner-programming basics, focus on what's actually different.
+
+Quality checks: confirm the path leads to the stated goal, not a generic tutorial. Flag any step that depends on something not covered earlier.`,
+      example:`For NEW_TOOL="Rust" with a Node.js background, the mentor might map ownership/borrowing to reasoning about mutable references you already avoid in JS, sequence steps from cargo basics to a first small CLI, and flag async/await-in-Rust as the step needing the most extra attention.`,
+      practices:[
+        "Be specific about your background — generic 'I'm a developer' produces a generic, unhelpfully-paced path.",
+        "State a concrete goal and deadline, not just 'learn X' — it changes what gets prioritized.",
+        "Ask follow-up 'why is this different from Y in my current stack' questions on the steps that feel hardest."
+      ]
+    },
+    {
+      id:"wf-data-explore", category:"data", favorite:false,
+      title:"Explore an unfamiliar dataset",
+      subtitle:"Get a fast structured first pass on a dataset — shape, quality issues, and where to look next.",
+      variables:[
+        {key:"DATA_DESC", label:"Dataset description", type:"textarea", placeholder:"e.g. CSV of order events, ~2M rows, columns: order_id, user_id, ts, status, amount"},
+        {key:"QUESTION", label:"Question you're trying to answer", type:"text", placeholder:"e.g. Why did refund rate spike last month?"},
+        {key:"TOOLING", label:"Tooling you'll use", type:"select", options:["Python / pandas","SQL","R","Spreadsheet (Excel/Sheets)"]}
+      ],
+      template:`Act as a data-savvy Senior Software Architect helping me explore a dataset.
+
+Objective: Help me answer "{{QUESTION}}" using this dataset.
+
+Dataset: {{DATA_DESC}}
+Tooling: {{TOOLING}}
+
+Reasoning strategy: think step-by-step — first what you'd check for data quality, then what analysis would actually answer the question, in that order.
+
+Output format: numbered plan, each step paired with the exact {{TOOLING}} code to run it.
+
+Quality checks: call out likely data quality issues (nulls, duplicates, timezone mismatches) before jumping to analysis. State what pattern in the output would support vs. contradict a hypothesis, so I know what to look for.`,
+      example:`For a refund-rate question over order events, the plan checks for duplicate order_ids and timezone drift in ts first, then groups refunds by week with the pandas code to run it, stating upfront that a spike isolated to one status transition would point at a specific pipeline bug rather than genuine user behavior.`,
+      practices:[
+        "Describe real column names and row counts — vague descriptions produce generic, unusable code.",
+        "Ask for the data-quality check step before the analysis step — most 'wrong answer' bugs are dirty data, not bad logic.",
+        "Have it state what result would support vs. contradict your hypothesis, so you're not just pattern-matching to what you expected."
+      ]
+    }
+  ];
+}
+
+/* ============================================================
+   STATE
+============================================================ */
+const LS_KEY = "aiplaybook_v1";
+let state = loadState();
+
+function defaultState(){
+  return {
+    theme: "dark",
+    explainerDismissed: false,
+    onboardSeen: false,
+    workflows: seedWorkflows(),
+    pbBlocks: [],
+    loopSaved: {},
+    firstRun: true
+  };
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    // migrate/ensure seed workflows exist alongside user ones
+    if(!parsed.workflows || !parsed.workflows.length) parsed.workflows = seedWorkflows();
+    return Object.assign(defaultState(), parsed);
+  }catch(e){ return defaultState(); }
+}
+function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* ============================================================
+   INIT
+============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+  document.body.setAttribute("data-theme", state.theme);
+  document.getElementById("themeToggle").textContent = state.theme === "dark" ? "◐" : "○";
+  if(state.explainerDismissed) document.getElementById("mainExplainer").style.display = "none";
+
+  renderStats();
+  renderCategories();
+  renderFlagship();
+  renderRecent();
+  renderCategoryChips();
+  renderWorkflowList();
+  renderPromptBuilder();
+  renderLoopPreview();
+  renderBlocksReference();
+
+  if(state.firstRun){
+    setTimeout(()=>openOverlay('overlayOnboard'), 400);
+    state.firstRun = false;
+    saveState();
+  }
+
+  ["loopBase","loopGoal","loopEval","loopStrategy","loopMaxIter","loopScoreStop"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", renderLoopPreview);
+    document.getElementById(id).addEventListener("change", renderLoopPreview);
+  });
+  document.querySelectorAll("#loopSafetyChecks input").forEach(cb=>cb.addEventListener("change", renderLoopPreview));
+
+  document.getElementById("globalSearchInput").addEventListener("input", renderGlobalSearch);
+});
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+const VIEW_META = {
+  dashboard: {title:"Dashboard", sub:"Your saved AI prompt workflows, at a glance"},
+  workflows: {title:"Workflows", sub:"Ready-made templates for recurring engineering tasks"},
+  promptbuilder: {title:"Prompt Builder", sub:"Assemble a custom prompt from labelled blocks"},
+  loopbuilder: {title:"Loop Builder", sub:"Turn a prompt into one that iterates and checks its own work"},
+  blocks: {title:"Building Blocks", sub:"What every block means, in plain language"},
+  settings: {title:"Settings", sub:"Your profile, appearance, and data"}
+};
+function showView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-"+name).classList.add("active");
+  document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.classList.toggle("active", b.dataset.view===name));
+  document.getElementById("topbarTitle").textContent = VIEW_META[name].title;
+  document.getElementById("topbarSub").textContent = VIEW_META[name].sub;
+  document.getElementById("sidebar").classList.remove("open");
+  window.scrollTo(0,0);
+  closeOverlay('overlaySearch');
+}
+
+/* ============================================================
+   OVERLAYS / TOAST
+============================================================ */
+function openOverlay(id){ document.getElementById(id).classList.add("open"); }
+function closeOverlay(id){ document.getElementById(id).classList.remove("open"); }
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape"){ document.querySelectorAll(".overlay.open").forEach(o=>o.classList.remove("open")); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); openOverlay('overlaySearch'); setTimeout(()=>document.getElementById('globalSearchInput').focus(),50); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="j"){ e.preventDefault(); toggleTheme(); }
+  if(e.key === "?" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){ openOverlay('overlayShortcuts'); }
+});
+let gPending = null;
+document.addEventListener("keydown",(e)=>{
+  if(["INPUT","TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if(e.key.toLowerCase()==="g"){ gPending = true; setTimeout(()=>gPending=false, 700); return; }
+  if(gPending){
+    const map = {d:"dashboard", w:"workflows", p:"promptbuilder", l:"loopbuilder"};
+    if(map[e.key.toLowerCase()]){ showView(map[e.key.toLowerCase()]); }
+    gPending = false;
+  }
+});
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+function copyText(text, ev){
+  navigator.clipboard.writeText(text).then(()=>showToast("Copied to clipboard")).catch(()=>showToast("Couldn't copy — select and copy manually"));
+}
+
+/* ============================================================
+   THEME
+============================================================ */
+function toggleTheme(){ setTheme(state.theme === "dark" ? "light" : "dark"); }
+function setTheme(t){
+  state.theme = t; saveState();
+  document.body.setAttribute("data-theme", t);
+  document.getElementById("themeToggle").textContent = t === "dark" ? "◐" : "○";
+}
+
+/* ============================================================
+   EXPLAINER
+============================================================ */
+function dismissExplainer(){
+  document.getElementById("mainExplainer").style.display = "none";
+  state.explainerDismissed = true; saveState();
+}
+function mainExplainerRestore(){
+  state.explainerDismissed = false; saveState();
+  document.getElementById("mainExplainer").style.display = "flex";
+  showView('dashboard'); showToast("Explainer restored");
+}
+
+/* ============================================================
+   DASHBOARD RENDER
+============================================================ */
+function renderStats(){
+  const wfs = state.workflows;
+  const favs = wfs.filter(w=>w.favorite).length;
+  const cats = new Set(wfs.map(w=>w.category)).size;
+  const stats = [
+    {num:wfs.length, lbl:"Saved workflows"},
+    {num:favs, lbl:"Favorited"},
+    {num:cats, lbl:"Categories in use"},
+    {num:Object.keys(BLOCK_DEFS).length + Object.keys(LOOP_BLOCK_DEFS).length, lbl:"Building blocks available"}
+  ];
+  document.getElementById("statRow").innerHTML = stats.map(s=>`
+    <div class="stat-card"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>
+  `).join("");
+}
+
+function renderCategories(){
+  document.getElementById("categoryGrid").innerHTML = CATEGORIES.map(c=>{
+    const count = state.workflows.filter(w=>w.category===c.id).length;
+    return `<button class="category-card" onclick="goToCategory('${c.id}')">
+      <span class="cat-icon">${c.icon}</span>
+      <h4>${c.name}</h4>
+      <p>${c.desc}</p>
+      <div class="cat-count">${count} workflow${count===1?'':'s'} →</div>
+    </button>`;
+  }).join("");
+}
+function goToCategory(id){
+  showView('workflows');
+  activeCategory = id;
+  renderCategoryChips();
+  renderWorkflowList();
+}
+
+function renderFlagship(){
+  const wf = state.workflows.find(w=>w.flagship) || state.workflows[0];
+  if(!wf){ document.getElementById("flagshipWorkflow").innerHTML = ""; return; }
+  document.getElementById("flagshipWorkflow").innerHTML = `
+    <div class="workflow-row" style="border-color:var(--accent);">
+      <div class="wf-main">
+        <h4>${wf.title} <span class="tag">${CATEGORIES.find(c=>c.id===wf.category)?.name||''}</span></h4>
+        <p>${wf.subtitle}</p>
+      </div>
+      <div class="wf-actions">
+        <button class="btn sm primary" onclick="openWorkflowDetail('${wf.id}')">Open</button>
+      </div>
+    </div>`;
+}
+
+function renderRecent(){
+  const list = state.workflows.slice(0,4);
+  const el = document.getElementById("recentList");
+  if(!list.length){ el.innerHTML = `<div class="empty-state"><div class="es-icon">▥</div><h4>No workflows yet</h4><p>Create one in the Prompt Builder or add it directly from Workflows.</p></div>`; return; }
+  el.innerHTML = list.map(w=>workflowRowHTML(w)).join("");
+}
+
+/* ============================================================
+   WORKFLOWS LIST VIEW
+============================================================ */
+let activeCategory = "all";
+function renderCategoryChips(){
+  const chips = [{id:"all", name:"All"}, ...CATEGORIES, {id:"favorites", name:"★ Favorites"}];
+  document.getElementById("categoryChips").innerHTML = chips.map(c=>`
+    <button class="chip ${activeCategory===c.id?'active':''}" onclick="setCategoryFilter('${c.id}')">${c.name||c}</button>
+  `).join("");
+}
+function setCategoryFilter(id){ activeCategory = id; renderCategoryChips(); renderWorkflowList(); }
+
+function workflowRowHTML(w){
+  const cat = CATEGORIES.find(c=>c.id===w.category);
+  return `<div class="workflow-row">
+    <div class="wf-main">
+      <h4>${escapeHtml(w.title)} ${w.flagship?'<span class="tag">★ flagship</span>':''}</h4>
+      <p>${escapeHtml(w.subtitle||'')}</p>
+    </div>
+    <div class="tag">${cat?cat.name:'Custom'}</div>
+    <div class="wf-actions">
+      <button class="star-btn ${w.favorite?'active':''}" title="Favorite" onclick="toggleFavorite('${w.id}')">${w.favorite?'★':'☆'}</button>
+      <button class="btn sm" onclick="duplicateWorkflow('${w.id}')" title="Duplicate">⧉</button>
+      <button class="btn sm" onclick="openWorkflowEditor('${w.id}')" title="Edit">✎</button>
+      <button class="btn sm primary" onclick="openWorkflowDetail('${w.id}')">Open</button>
+    </div>
+  </div>`;
+}
+
+function renderWorkflowList(){
+  const q = (document.getElementById("workflowSearch").value||"").toLowerCase();
+  let list = state.workflows.filter(w=>{
+    const matchesCat = activeCategory==="all" ? true : activeCategory==="favorites" ? w.favorite : w.category===activeCategory;
+    const matchesQ = !q || (w.title+" "+(w.subtitle||"")).toLowerCase().includes(q);
+    return matchesCat && matchesQ;
+  });
+  const el = document.getElementById("workflowList");
+  if(!list.length){
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">▥</div><h4>No workflows match</h4><p>Try a different category or search term, or create a new workflow.</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(w=>workflowRowHTML(w)).join("");
+}
+function toggleFavorite(id){
+  const w = state.workflows.find(w=>w.id===id); if(!w) return;
+  w.favorite = !w.favorite; saveState();
+  renderWorkflowList(); renderStats();
+}
+function duplicateWorkflow(id){
+  const w = state.workflows.find(w=>w.id===id); if(!w) return;
+  const copy = JSON.parse(JSON.stringify(w));
+  copy.id = "wf-"+Date.now();
+  copy.title = w.title + " (copy)";
+  copy.flagship = false;
+  state.workflows.unshift(copy); saveState();
+  renderWorkflowList(); renderStats(); showToast("Workflow duplicated");
+}
+
+/* ============================================================
+   WORKFLOW DETAIL MODAL
+============================================================ */
+function fillTemplate(template, values){
+  return template.replace(/\\{\\{(\\w+)\\}\\}/g, (m,k)=> values[k] && values[k].length ? values[k] : `[${k}]`);
+}
+function openWorkflowDetail(id){
+  const w = state.workflows.find(w=>w.id===id); if(!w) return;
+  const values = {};
+  w.variables.forEach(v=> values[v.key] = v.placeholder ? "" : "");
+
+  const varsHTML = w.variables.map(v=>{
+    if(v.type==="select"){
+      return `<div class="field"><label class="field-label">${v.label}</label>
+        <select data-var="${v.key}" onchange="updateWorkflowPreview('${w.id}')">
+          ${v.options.map(o=>`<option value="${o}">${o}</option>`).join("")}
+        </select></div>`;
+    }
+    if(v.type==="textarea"){
+      return `<div class="field" style="grid-column:1/-1;"><label class="field-label">${v.label}</label>
+        <textarea data-var="${v.key}" placeholder="${v.placeholder||''}" oninput="updateWorkflowPreview('${w.id}')" rows="2"></textarea></div>`;
+    }
+    return `<div class="field"><label class="field-label">${v.label}</label>
+      <input type="text" data-var="${v.key}" placeholder="${v.placeholder||''}" oninput="updateWorkflowPreview('${w.id}')"></div>`;
+  }).join("");
+
+  document.getElementById("workflowModalContent").innerHTML = `
+    <div class="modal-head">
+      <div><h2>${escapeHtml(w.title)}</h2><p>${escapeHtml(w.subtitle||'')}</p></div>
+      <button class="modal-close" onclick="closeOverlay('overlayWorkflow')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="var-form" id="wfVarForm">${varsHTML}</div>
+      <div class="copy-row"><label class="field-label" style="margin:0;">Filled prompt</label></div>
+      <div class="template-box" id="wfTemplateBox"></div>
+      <div class="copy-row">
+        <span class="helptext">Blanks show as [VARIABLE_NAME] until filled in above.</span>
+        <button class="btn sm primary" onclick="copyText(getFilledWorkflowText('${w.id}'), event)">⧉ Copy prompt</button>
+      </div>
+      ${w.example ? `<div class="divider"></div><label class="field-label">Example</label><div class="example-block">${escapeHtml(w.example)}</div>` : ''}
+      ${w.practices && w.practices.length ? `<div class="divider"></div><label class="field-label">Best practices</label><ul class="practice-list">${w.practices.map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul>` : ''}
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="openWorkflowEditor('${w.id}'); closeOverlay('overlayWorkflow')">✎ Edit workflow</button>
+      <button class="btn primary" onclick="copyText(getFilledWorkflowText('${w.id}'), event)">⧉ Copy prompt</button>
+    </div>
+  `;
+  openOverlay('overlayWorkflow');
+  updateWorkflowPreview(w.id);
+}
+function getFilledWorkflowText(id){
+  const w = state.workflows.find(w=>w.id===id);
+  const values = {};
+  document.querySelectorAll("#wfVarForm [data-var]").forEach(el=> values[el.dataset.var]=el.value);
+  return fillTemplate(w.template, values);
+}
+function updateWorkflowPreview(id){
+  document.getElementById("wfTemplateBox").textContent = getFilledWorkflowText(id);
+}
+
+/* ============================================================
+   WORKFLOW EDITOR (create / edit custom workflow)
+============================================================ */
+function openWorkflowEditor(id){
+  const isNew = !id;
+  const w = isNew ? {id:"wf-"+Date.now(), category:"architecture", title:"", subtitle:"", template:"", variables:[], example:"", practices:[]} : JSON.parse(JSON.stringify(state.workflows.find(w=>w.id===id)));
+
+  document.getElementById("editWorkflowModalContent").innerHTML = `
+    <div class="modal-head">
+      <div><h2>${isNew?'New workflow':'Edit workflow'}</h2><p>Define a reusable template with {{VARIABLE}} placeholders.</p></div>
+      <button class="modal-close" onclick="closeOverlay('overlayEditWorkflow')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="two-col">
+        <div class="field"><label class="field-label">Title</label><input type="text" id="ewTitle" value="${escapeAttr(w.title)}" placeholder="e.g. Design a caching layer"></div>
+        <div class="field"><label class="field-label">Category</label>
+          <select id="ewCategory">${CATEGORIES.map(c=>`<option value="${c.id}" ${w.category===c.id?'selected':''}>${c.name}</option>`).join("")}</select>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">One-line description</label><input type="text" id="ewSubtitle" value="${escapeAttr(w.subtitle)}" placeholder="What this workflow is for"></div>
+      <div class="field">
+        <label class="field-label">Template</label>
+        <textarea id="ewTemplate" rows="8" placeholder="Write your prompt. Use {{VARIABLE_NAME}} for fill-in-the-blank spots.">${escapeHtml(w.template)}</textarea>
+        <div class="helptext">Any {{WORD}} in the template automatically becomes an editable variable when someone opens this workflow.</div>
+      </div>
+      <div class="field"><label class="field-label">Example (optional)</label><textarea id="ewExample" rows="2">${escapeHtml(w.example||'')}</textarea></div>
+      <div class="field"><label class="field-label">Best practices, one per line (optional)</label><textarea id="ewPractices" rows="3">${(w.practices||[]).join("\\n")}</textarea></div>
+    </div>
+    <div class="modal-foot">
+      ${!isNew ? `<button class="btn danger" onclick="deleteWorkflow('${w.id}')">Delete</button>` : ''}
+      <button class="btn" onclick="closeOverlay('overlayEditWorkflow')">Cancel</button>
+      <button class="btn primary" onclick="saveWorkflowFromEditor('${w.id}', ${isNew})">Save workflow</button>
+    </div>
+  `;
+  openOverlay('overlayEditWorkflow');
+}
+function saveWorkflowFromEditor(id, isNew){
+  const title = document.getElementById("ewTitle").value.trim() || "Untitled workflow";
+  const category = document.getElementById("ewCategory").value;
+  const subtitle = document.getElementById("ewSubtitle").value.trim();
+  const template = document.getElementById("ewTemplate").value;
+  const example = document.getElementById("ewExample").value.trim();
+  const practices = document.getElementById("ewPractices").value.split("\\n").map(s=>s.trim()).filter(Boolean);
+
+  const varNames = [...new Set((template.match(/\\{\\{(\\w+)\\}\\}/g)||[]).map(m=>m.replace(/[{}]/g,"")))];
+  const variables = varNames.map(k=>({key:k, label:k.replace(/_/g," ").toLowerCase().replace(/^./,c=>c.toUpperCase()), type:"textarea", placeholder:""}));
+
+  const wf = {id, category, title, subtitle, template, example, practices, variables, favorite:false, flagship:false};
+
+  if(isNew){ state.workflows.unshift(wf); }
+  else{
+    const idx = state.workflows.findIndex(w=>w.id===id);
+    wf.favorite = state.workflows[idx].favorite; wf.flagship = state.workflows[idx].flagship;
+    state.workflows[idx] = wf;
+  }
+  saveState();
+  closeOverlay('overlayEditWorkflow');
+  renderWorkflowList(); renderStats(); renderCategories(); renderRecent();
+  showToast("Workflow saved");
+}
+function deleteWorkflow(id){
+  if(!confirm("Delete this workflow? This can't be undone.")) return;
+  state.workflows = state.workflows.filter(w=>w.id!==id);
+  saveState();
+  closeOverlay('overlayEditWorkflow');
+  renderWorkflowList(); renderStats(); renderCategories(); renderRecent();
+  showToast("Workflow deleted");
+}
+
+/* ============================================================
+   PROMPT BUILDER
+============================================================ */
+function renderPromptBuilder(){
+  const picker = document.getElementById("pbPicker");
+  picker.innerHTML = `<div class="helptext" style="margin-bottom:4px;">Click a block to add it to your prompt →</div>` +
+    Object.entries(BLOCK_DEFS).map(([key,def])=>`
+    <div class="block-picker-item" onclick="addPBBlock('${key}')">
+      <div class="bpi-top"><h5>${def.icon} ${def.label}</h5><div class="add-mark">+</div></div>
+      <p>${def.why}</p>
+    </div>`).join("");
+  renderAssembled();
+}
+function addPBBlock(key){
+  if(state.pbBlocks.find(b=>b.key===key)){ showToast(BLOCK_DEFS[key].label+" is already added"); return; }
+  const def = BLOCK_DEFS[key];
+  state.pbBlocks.push({key, value: def.type==="select" ? def.options[0] : ""});
+  saveState();
+  renderAssembled();
+}
+function removePBBlock(key){
+  state.pbBlocks = state.pbBlocks.filter(b=>b.key!==key);
+  saveState(); renderAssembled();
+}
+function updatePBBlock(key, val){
+  const b = state.pbBlocks.find(b=>b.key===key); if(b){ b.value = val; saveState(); }
+  renderPBPreview();
+}
+function renderAssembled(){
+  const area = document.getElementById("pbAssembled");
+  if(!state.pbBlocks.length){
+    area.innerHTML = `<div class="empty-assembly">No blocks added yet. Pick blocks from the left — start with <b>Role</b> and <b>Objective</b> — and they'll appear here to fill in.</div>`;
+    renderPBPreview();
+    return;
+  }
+  area.innerHTML = state.pbBlocks.map((b,i)=>{
+    const def = BLOCK_DEFS[b.key];
+    let inputHTML = "";
+    if(def.type==="select"){
+      inputHTML = `<select onchange="updatePBBlock('${b.key}', this.value)">
+        ${def.options.map(o=>`<option value="${o}" ${o===b.value?'selected':''}>${o}</option>`).join("")}
+      </select>`;
+    } else {
+      inputHTML = `<textarea rows="2" placeholder="${def.placeholder||''}" oninput="updatePBBlock('${b.key}', this.value)">${escapeHtml(b.value)}</textarea>`;
+    }
+    return `<div class="assembled-block">
+      <div class="ab-head">
+        <div class="ab-title"><span class="ab-num">${i+1}</span><h5>${def.icon} ${def.label}</h5></div>
+        <button class="ab-remove" onclick="removePBBlock('${b.key}')" title="Remove block">✕</button>
+      </div>
+      <div class="ab-explain">${def.why}</div>
+      ${inputHTML}
+    </div>`;
+  }).join("");
+  renderPBPreview();
+}
+function getPromptBuilderText(){
+  if(!state.pbBlocks.length) return "Add building blocks to see your prompt here.";
+  const lines = [];
+  state.pbBlocks.forEach(b=>{
+    const def = BLOCK_DEFS[b.key];
+    const val = b.value && b.value.trim() ? b.value.trim() : `[${def.label.toLowerCase()} not filled in]`;
+    if(b.key==="role") lines.push(`Act as a ${val}.`);
+    else if(b.key==="objective") lines.push(`Objective: ${val}`);
+    else if(b.key==="context") lines.push(`Context: ${val}`);
+    else if(b.key==="constraints") lines.push(`Constraints: ${val}`);
+    else if(b.key==="reasoning") lines.push(`Reasoning strategy: ${val}`);
+    else if(b.key==="outputformat") lines.push(`Output format: ${val}`);
+    else if(b.key==="tone") lines.push(`Tone: ${val}`);
+    else if(b.key==="examples") lines.push(`Example of what "good" looks like: ${val}`);
+    else if(b.key==="qualitychecks") lines.push(`Before finalizing, check: ${val}`);
+  });
+  return lines.join("\\n\\n");
+}
+function renderPBPreview(){
+  document.getElementById("pbPreview").textContent = getPromptBuilderText();
+}
+function resetPromptBuilder(){
+  state.pbBlocks = []; saveState(); renderAssembled();
+}
+function sendPromptToLoop(){
+  document.getElementById("loopBase").value = getPromptBuilderText();
+  showView('loopbuilder');
+  renderLoopPreview();
+  showToast("Prompt sent to Loop Builder");
+}
+function savePromptAsWorkflow(){
+  if(!state.pbBlocks.length){ showToast("Add at least one block first"); return; }
+  const wf = {
+    id:"wf-"+Date.now(), category:"architecture", title:"Custom prompt "+new Date().toLocaleDateString(),
+    subtitle:"Built with the Prompt Builder", template: getPromptBuilderText(), example:"", practices:[],
+    variables:[], favorite:false, flagship:false
+  };
+  state.workflows.unshift(wf); saveState();
+  renderWorkflowList(); renderStats(); renderCategories();
+  showToast("Saved as a workflow"); showView('workflows');
+}
+
+/* ============================================================
+   LOOP BUILDER
+============================================================ */
+function renderLoopPreview(){
+  const base = document.getElementById("loopBase").value.trim() || "[paste or build your base prompt above]";
+  const goal = document.getElementById("loopGoal").value.trim() || "[define what success looks like]";
+  const evalC = document.getElementById("loopEval").value.trim() || "[define how each attempt is scored]";
+  const strategy = document.getElementById("loopStrategy").value;
+  const maxIter = document.getElementById("loopMaxIter").value;
+  const scoreStop = document.getElementById("loopScoreStop").value;
+  const safety = [...document.querySelectorAll("#loopSafetyChecks input:checked")].map(cb=>cb.parentElement.textContent.trim());
+
+  let stopLines = [];
+  if(maxIter !== "0") stopLines.push(`Stop after ${maxIter} iterations even if the goal isn't fully met — report the best attempt and what's still missing.`);
+  else stopLines.push("No hard iteration cap — rely on the goal and score threshold below to end the loop.");
+  if(scoreStop !== "none") stopLines.push(`Stop early if the evaluation score reaches ${scoreStop}/10.`);
+
+  const text = `${base}
+
+This is a LOOPING task: after producing an attempt, evaluate it yourself, revise it, and repeat.
+
+Goal (what "done" means): ${goal}
+
+Evaluation criteria (how to judge each attempt): ${evalC}
+
+Improvement strategy between iterations: ${strategy}
+
+Stop conditions:
+${stopLines.map(l=>"- "+l).join("\\n")}
+
+Safety rules:
+${safety.length ? safety.map(s=>"- "+s).join("\\n") : "- (none selected)"}
+
+After each iteration, report: the attempt number, your evaluation score with reasoning, and what you're changing next. Stop and present the final result clearly once a stop condition is met.`;
+  document.getElementById("loopPreview").textContent = text;
+}
+function getLoopBuilderText(){ return document.getElementById("loopPreview").textContent; }
+function saveLoopAsWorkflow(){
+  const wf = {
+    id:"wf-"+Date.now(), category:"architecture", title:"Looping prompt "+new Date().toLocaleDateString(),
+    subtitle:"Built with the Loop Builder", template: getLoopBuilderText(), example:"", practices:[],
+    variables:[], favorite:false, flagship:false
+  };
+  state.workflows.unshift(wf); saveState();
+  renderWorkflowList(); renderStats(); renderCategories();
+  showToast("Saved as a workflow"); showView('workflows');
+}
+
+/* ============================================================
+   BUILDING BLOCKS REFERENCE VIEW
+============================================================ */
+function renderBlocksReference(){
+  const pbHTML = Object.entries(BLOCK_DEFS).map(([k,d])=>`
+    <div class="card" style="margin-bottom:10px;">
+      <h4 style="font-size:13.5px; margin-bottom:4px;">${d.icon} ${d.label}</h4>
+      <p style="font-size:12.5px; color:var(--text-dim);">${d.why}</p>
+    </div>`).join("");
+  const loopHTML = Object.entries(LOOP_BLOCK_DEFS).map(([k,d])=>`
+    <div class="card" style="margin-bottom:10px;">
+      <h4 style="font-size:13.5px; margin-bottom:4px;">${d.label}</h4>
+      <p style="font-size:12.5px; color:var(--text-dim);">${d.why}</p>
+    </div>`).join("");
+
+  document.getElementById("blocksReference").innerHTML = `
+    <div class="section-title"><h2>Prompt Builder blocks</h2><p>Used to assemble a one-shot prompt</p></div>
+    ${pbHTML}
+    <div class="section-title"><h2>Loop Builder blocks</h2><p>Used to turn a prompt into an iterating one</p></div>
+    ${loopHTML}
+  `;
+}
+
+/* ============================================================
+   GLOBAL SEARCH
+============================================================ */
+function renderGlobalSearch(){
+  const q = document.getElementById("globalSearchInput").value.toLowerCase().trim();
+  const results = document.getElementById("globalSearchResults");
+  if(!q){ results.innerHTML = ""; return; }
+  let items = [];
+  state.workflows.forEach(w=>{
+    if((w.title+" "+(w.subtitle||"")).toLowerCase().includes(q)) items.push({type:"Workflow", label:w.title, action:()=>{closeOverlay('overlaySearch'); showView('workflows'); openWorkflowDetail(w.id);}});
+  });
+  Object.entries(BLOCK_DEFS).forEach(([k,d])=>{ if((d.label+" "+d.why).toLowerCase().includes(q)) items.push({type:"Block", label:d.label, action:()=>{closeOverlay('overlaySearch'); showView('blocks');}}); });
+  ["Dashboard","Workflows","Prompt Builder","Loop Builder","Building Blocks","Settings"].forEach(sec=>{
+    if(sec.toLowerCase().includes(q)) items.push({type:"Section", label:sec, action:()=>{closeOverlay('overlaySearch'); showView(sec.toLowerCase().replace(/\\s/g,''));}});
+  });
+  if(!items.length){ results.innerHTML = `<div class="helptext" style="padding:10px;">No matches for "${escapeHtml(q)}"</div>`; return; }
+  results.innerHTML = items.slice(0,10).map((it,i)=>`
+    <button class="workflow-row" style="padding:10px 12px;" onclick="globalSearchGo(${i})">
+      <div class="wf-main"><h4>${escapeHtml(it.label)}</h4></div>
+      <div class="tag">${it.type}</div>
+    </button>`).join("");
+  window._searchItems = items;
+}
+function globalSearchGo(i){ window._searchItems[i].action(); }
+
+/* ============================================================
+   IMPORT / EXPORT / RESET
+============================================================ */
+function exportData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "ai-playbook-export.json"; a.click();
+  URL.revokeObjectURL(url);
+  showToast("Exported");
+}
+function importData(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!imported.workflows) throw new Error("bad file");
+      state = Object.assign(defaultState(), imported);
+      saveState();
+      renderStats(); renderCategories(); renderFlagship(); renderRecent(); renderCategoryChips(); renderWorkflowList();
+      showToast("Import successful");
+    }catch(err){ showToast("Couldn't read that file"); }
+  };
+  reader.readAsText(file);
+}
+function resetAllData(){
+  if(!confirm("This deletes all custom workflows and favorites and restores defaults. Continue?")) return;
+  localStorage.removeItem(LS_KEY);
+  state = defaultState();
+  saveState();
+  location.reload();
+}
+
+/* ============================================================
+   UTIL
+============================================================ */
+function escapeHtml(str){
+  return (str||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
+</script>
+</body>
+</html>
